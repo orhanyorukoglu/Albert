@@ -13,7 +13,7 @@ const TESTING_MODE = import.meta.env.VITE_TESTING_MODE === 'yes'
 
 function App() {
   const [url, setUrl] = useState('')
-  const [format, setFormat] = useState('json')
+  const [format, setFormat] = useState('txt')
   const [transcript, setTranscript] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

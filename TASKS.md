@@ -28,6 +28,7 @@
 ## Phase 3: Core Components
 
 ### API Service Layer
+
 - [x] Create `src/services/api.js`
 - [x] Implement `extractTranscript(url, format, languagePreference)` function
 - [x] Add request headers including `X-API-Key`
@@ -36,18 +37,21 @@
 - [x] Add diagnostic functions (`getConfig`, `checkConnectivity`, `checkHealth`, `checkApiAuth`)
 
 ### URL Input Component
+
 - [x] Create `src/components/UrlInput.jsx`
 - [x] Add text input field with placeholder
 - [x] Add submit button
 - [x] Disable button while loading
 
 ### Format Selector Component
+
 - [x] Create `src/components/FormatSelector.jsx`
 - [x] Add radio buttons for JSON, TXT, SRT, VTT
 - [x] Set JSON as default selected
 - [x] Handle format change callback
 
 ### Transcript Display Component
+
 - [x] Create `src/components/TranscriptDisplay.jsx`
 - [x] Add container for transcript text
 - [x] Style for readability (monospace font for SRT/VTT/JSON, regular for TXT)
@@ -56,28 +60,33 @@
 - [x] Extract format-specific content (srt_content, vtt_content, full_text)
 
 ### Copy Button Component
+
 - [x] Create `src/components/CopyButton.jsx`
 - [x] Implement clipboard copy using `navigator.clipboard.writeText()`
 - [x] Add visual feedback on copy (text change)
 - [x] Handle copy failure gracefully
 
 ### Download Button Component
+
 - [x] Create `src/components/DownloadButton.jsx`
 - [x] Implement file download functionality
 - [x] Support different file extensions based on format
 - [ ] Fix Chrome download compatibility (works in Safari, investigating Chrome issue)
 
 ### Loading Indicator
+
 - [x] Create `src/components/LoadingSpinner.jsx`
 - [x] Add simple CSS spinner
 - [x] Display during API request
 
 ### Error Display Component
+
 - [x] Create `src/components/ErrorMessage.jsx`
 - [x] Style error messages distinctly (red/warning colors)
 - [x] Add dismiss functionality
 
 ### Diagnostic Sidebar (Testing Mode)
+
 - [x] Create `src/components/DiagnosticSidebar.jsx`
 - [x] Display API base URL
 - [x] Display API key status (masked preview)
@@ -147,6 +156,7 @@
 **API Endpoint**: `POST https://ytte-production.up.railway.app/api/v1/extract`
 
 **Request Headers**:
+
 ```
 Content-Type: application/json
 X-API-Key: 4321
@@ -155,6 +165,7 @@ X-API-Key: 4321
 > **Note**: `4321` is the development API key. Replace with production key before deployment.
 
 **Request Body**:
+
 ```json
 {
   "url": "https://www.youtube.com/watch?v=VIDEO_ID",
@@ -163,6 +174,7 @@ X-API-Key: 4321
 ```
 
 **YouTube URL Regex Pattern**:
+
 ```javascript
-/^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/
+/^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/;
 ```
