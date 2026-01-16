@@ -8,6 +8,8 @@ import DownloadButton from './components/DownloadButton'
 import LoadingSpinner from './components/LoadingSpinner'
 import ErrorPopup from './components/ErrorPopup'
 import DiagnosticSidebar from './components/DiagnosticSidebar'
+import LanguageSelector from './components/LanguageSelector'
+import ApiEnvironmentSwitcher from './components/ApiEnvironmentSwitcher'
 
 const TESTING_MODE = import.meta.env.VITE_TESTING_MODE === 'yes'
 
@@ -15,23 +17,80 @@ function App() {
   const [url, setUrl] = useState('')
   const [format, setFormat] = useState('txt')
   const [transcript, setTranscript] = useState(null)
+  const [allTranscripts, setAllTranscripts] = useState(null) // Stores all language transcripts
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState(null)
   const [errorType, setErrorType] = useState(null)
   const [retryInfo, setRetryInfo] = useState(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
+  const [availableLanguages, setAvailableLanguages] = useState([])
+  const [selectedLanguage, setSelectedLanguage] = useState('en')
+
+  // Helper to format time for SRT/VTT
+  const formatTime = (seconds, forVtt = false) => {
+    const hrs = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
+    const secs = Math.floor(seconds % 60)
+    const ms = Math.round((seconds % 1) * 1000)
+    const separator = forVtt ? '.' : ','
+    return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}${separator}${String(ms).padStart(3, '0')}`
+  }
+
+  // Convert segments to SRT format
+  const segmentsToSrt = (segments) => {
+    return segments.map((seg, i) => {
+      const start = formatTime(seg.start)
+      const end = formatTime(seg.end || seg.start + seg.duration)
+      return `${i + 1}\n${start} --> ${end}\n${seg.text}\n`
+    }).join('\n')
+  }
+
+  // Convert segments to VTT format
+  const segmentsToVtt = (segments) => {
+    const cues = segments.map((seg) => {
+      const start = formatTime(seg.start, true)
+      const end = formatTime(seg.end || seg.start + seg.duration, true)
+      return `${start} --> ${end}\n${seg.text}\n`
+    }).join('\n')
+    return `WEBVTT\n\n${cues}`
+  }
+
+  // Convert segments to plain text
+  const segmentsToText = (segments) => {
+    return segments.map(seg => seg.text).join(' ')
+  }
 
   const getCopyContent = () => {
     if (!transcript) return null
+
+    // Handle legacy format (string response)
     if (typeof transcript === 'string') {
       return format === 'txt' ? transcript.replace(/\n+/g, ' ').trim() : transcript
     }
+
+    // Handle legacy format with format-specific content
     if (format === 'srt' && transcript.srt_content) return transcript.srt_content
     if (format === 'vtt' && transcript.vtt_content) return transcript.vtt_content
-    if (format === 'txt') {
+    if (format === 'txt' && (transcript.full_text || transcript.txt_content || transcript.transcript)) {
       const text = transcript.full_text || transcript.txt_content || transcript.transcript || ''
       return text.replace(/\n+/g, ' ').trim()
     }
+
+    // Handle new segments-based format
+    if (transcript.segments) {
+      switch (format) {
+        case 'srt':
+          return segmentsToSrt(transcript.segments)
+        case 'vtt':
+          return segmentsToVtt(transcript.segments)
+        case 'txt':
+          return segmentsToText(transcript.segments)
+        case 'json':
+        default:
+          return JSON.stringify(transcript, null, 2)
+      }
+    }
+
     return JSON.stringify(transcript, null, 2)
   }
 
@@ -41,14 +100,37 @@ function App() {
     setErrorType(null)
     setRetryInfo(null)
     setTranscript(null)
+    setAllTranscripts(null)
 
     try {
-      const result = await extractTranscript(url, format, 'en', (retry) => {
+      const result = await extractTranscript(url, format, { fetchAllLanguages: true }, (retry) => {
         // Update retry info for sidebar display
         setRetryInfo(retry)
       })
       setRetryInfo(null)
-      setTranscript(result)
+
+      // Store all transcripts for instant language switching
+      if (result.transcripts) {
+        setAllTranscripts(result.transcripts)
+
+        // Set default language (prefer English, or use the default from API)
+        const defaultLang = result.default_language || 'en'
+        const langToUse = result.transcripts[defaultLang] ? defaultLang : Object.keys(result.transcripts)[0]
+        setSelectedLanguage(langToUse)
+
+        // Build transcript object for display from the selected language
+        const selectedTranscript = result.transcripts[langToUse]
+        setTranscript({
+          ...selectedTranscript,
+          language: langToUse,
+          video_info: result.video_info,
+        })
+      }
+
+      // Store available languages from response
+      if (result.available_languages) {
+        setAvailableLanguages(result.available_languages)
+      }
     } catch (err) {
       setRetryInfo(null)
       const errorMessage = err.message || 'An unexpected error occurred.'
@@ -68,6 +150,27 @@ function App() {
     }
   }
 
+  const handleLanguageChange = (langCode) => {
+    setSelectedLanguage(langCode)
+    // Switch transcript instantly from cached data (no API call needed)
+    if (allTranscripts && allTranscripts[langCode]) {
+      setTranscript({
+        ...allTranscripts[langCode],
+        language: langCode,
+      })
+    }
+  }
+
+  const handleUrlChange = (newUrl) => {
+    setUrl(newUrl)
+    // Reset state when URL changes
+    if (newUrl !== url) {
+      setAvailableLanguages([])
+      setSelectedLanguage('en')
+      setAllTranscripts(null)
+    }
+  }
+
   return (
     <div className="flex min-h-screen">
       {TESTING_MODE && <DiagnosticSidebar apiError={apiError} retryInfo={retryInfo} />}
@@ -79,6 +182,9 @@ function App() {
 
       <div className="flex-1 bg-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-8">
+          <div className="flex justify-end mb-4">
+            <ApiEnvironmentSwitcher />
+          </div>
           <h1 className="text-2xl font-bold text-center mb-8">
             Albert - YouTube Transcript Extractor
           </h1>
@@ -86,7 +192,7 @@ function App() {
           <div className="bg-white rounded-xl shadow-sm p-6">
             <UrlInput
               value={url}
-              onChange={setUrl}
+              onChange={handleUrlChange}
               onSubmit={handleSubmit}
               disabled={loading}
             />
@@ -103,6 +209,14 @@ function App() {
 
             {transcript && !loading && (
               <>
+                {availableLanguages.length > 1 && (
+                  <LanguageSelector
+                    languages={availableLanguages}
+                    selectedLanguage={selectedLanguage}
+                    onChange={handleLanguageChange}
+                    disabled={loading}
+                  />
+                )}
                 <div className="mt-6 flex items-center justify-between">
                   <h2 className="text-lg font-medium text-gray-900">Transcript</h2>
                   <div className="flex gap-2">

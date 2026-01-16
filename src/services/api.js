@@ -1,18 +1,59 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const API_KEY = import.meta.env.VITE_API_KEY
 
+// Available API environments
+export const API_ENVIRONMENTS = {
+  production: {
+    name: 'Production',
+    url: import.meta.env.VITE_API_BASE_URL || 'https://ytte-production.up.railway.app',
+  },
+  local: {
+    name: 'Local',
+    url: import.meta.env.VITE_API_LOCAL_URL || 'http://localhost:8000',
+  },
+}
+
+const STORAGE_KEY = 'albert_api_environment'
+
+// Get the current environment from localStorage or default to production
+export function getApiEnvironment() {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored && API_ENVIRONMENTS[stored]) {
+    return stored
+  }
+  return 'production'
+}
+
+// Set the API environment
+export function setApiEnvironment(env) {
+  if (API_ENVIRONMENTS[env]) {
+    localStorage.setItem(STORAGE_KEY, env)
+    return true
+  }
+  return false
+}
+
+// Get the current API base URL
+function getApiBaseUrl() {
+  const env = getApiEnvironment()
+  return API_ENVIRONMENTS[env].url
+}
+
 export function getConfig() {
+  const env = getApiEnvironment()
   return {
-    baseUrl: API_BASE_URL,
+    environment: env,
+    environmentName: API_ENVIRONMENTS[env].name,
+    baseUrl: API_ENVIRONMENTS[env].url,
     hasApiKey: !!API_KEY,
     apiKeyPreview: API_KEY ? `${API_KEY.slice(0, 2)}***` : 'Not set',
   }
 }
 
 export async function checkConnectivity() {
+  const baseUrl = getApiBaseUrl()
   const start = performance.now()
   try {
-    const response = await fetch(`${API_BASE_URL}/`, {
+    const response = await fetch(`${baseUrl}/`, {
       method: 'GET',
       signal: AbortSignal.timeout(5000),
     })
@@ -32,8 +73,9 @@ export async function checkConnectivity() {
 }
 
 export async function checkHealth() {
+  const baseUrl = getApiBaseUrl()
   try {
-    const response = await fetch(`${API_BASE_URL}/health`, {
+    const response = await fetch(`${baseUrl}/health`, {
       method: 'GET',
       signal: AbortSignal.timeout(5000),
     })
@@ -48,8 +90,9 @@ export async function checkHealth() {
 }
 
 export async function checkApiAuth() {
+  const baseUrl = getApiBaseUrl()
   try {
-    const response = await fetch(`${API_BASE_URL}/api/v1/extract`, {
+    const response = await fetch(`${baseUrl}/api/v1/extract`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,18 +116,24 @@ export async function checkApiAuth() {
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // Helper function to make a single API request
-async function makeRequest(url, format, languagePreference) {
-  const response = await fetch(`${API_BASE_URL}/api/v1/extract`, {
+async function makeRequest(url, format, options = {}) {
+  const baseUrl = getApiBaseUrl()
+  const { languagePreference, fetchAllLanguages } = options
+
+  const body = { url, format }
+  if (fetchAllLanguages) {
+    body.fetch_all_languages = true
+  } else if (languagePreference) {
+    body.language_preference = languagePreference
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/extract`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-API-Key': API_KEY,
     },
-    body: JSON.stringify({
-      url,
-      format,
-      language_preference: languagePreference,
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
@@ -154,7 +203,7 @@ async function makeRequest(url, format, languagePreference) {
   return response.json()
 }
 
-export async function extractTranscript(url, format = 'json', languagePreference = 'en', onRetry = null) {
+export async function extractTranscript(url, format = 'json', options = {}, onRetry = null) {
   const maxRetries = 3
   const baseDelay = 2000 // 2 seconds
 
@@ -162,7 +211,7 @@ export async function extractTranscript(url, format = 'json', languagePreference
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await makeRequest(url, format, languagePreference)
+      return await makeRequest(url, format, options)
     } catch (err) {
       lastError = err
 

@@ -1,3 +1,7 @@
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
+
 const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/
 
 export default function UrlInput({ value, onChange, onSubmit, disabled }) {
@@ -14,25 +18,32 @@ export default function UrlInput({ value, onChange, onSubmit, disabled }) {
   return (
     <form onSubmit={handleSubmit} className="flex gap-3">
       <div className="flex-1">
-        <input
+        <Input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Enter YouTube URL..."
           disabled={disabled}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className={`h-11 ${showError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
         />
         {showError && (
-          <p className="mt-1 text-sm text-red-500">Please enter a valid YouTube URL</p>
+          <p className="mt-1 text-sm text-destructive">Please enter a valid YouTube URL</p>
         )}
       </div>
-      <button
+      <Button
         type="submit"
         disabled={disabled || !isValidUrl}
-        className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+        className="h-11 px-6"
       >
-        {disabled ? 'Loading...' : 'Get'}
-      </button>
+        {disabled ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading...
+          </>
+        ) : (
+          'Get'
+        )}
+      </Button>
     </form>
   )
 }

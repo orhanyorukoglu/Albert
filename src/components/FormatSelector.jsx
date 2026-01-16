@@ -1,33 +1,36 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
 const FORMATS = [
+  { value: 'txt', label: 'Text' },
   { value: 'json', label: 'JSON' },
-  { value: 'txt', label: 'TXT' },
   { value: 'srt', label: 'SRT' },
   { value: 'vtt', label: 'VTT' },
 ]
 
 export default function FormatSelector({ value, onChange, disabled }) {
   return (
-    <div className="flex items-center gap-6">
-      <span className="text-gray-700 font-medium">Format:</span>
-      <div className="flex gap-4">
-        {FORMATS.map((format) => (
-          <label
-            key={format.value}
-            className={`flex items-center gap-2 cursor-pointer ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            <input
-              type="radio"
-              name="format"
-              value={format.value}
-              checked={value === format.value}
-              onChange={(e) => onChange(e.target.value)}
-              disabled={disabled}
-              className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-gray-700">{format.label}</span>
-          </label>
-        ))}
-      </div>
+    <div className="flex items-center gap-4">
+      <label className="text-gray-700 font-medium">
+        Transcript Format:
+      </label>
+      <Select value={value} onValueChange={onChange} disabled={disabled}>
+        <SelectTrigger className="w-32">
+          <SelectValue placeholder="Select format" />
+        </SelectTrigger>
+        <SelectContent>
+          {FORMATS.map((format) => (
+            <SelectItem key={format.value} value={format.value}>
+              {format.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }
