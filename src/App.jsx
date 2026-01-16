@@ -6,7 +6,6 @@ import TranscriptDisplay from './components/TranscriptDisplay'
 import CopyButton from './components/CopyButton'
 import DownloadButton from './components/DownloadButton'
 import LoadingSpinner from './components/LoadingSpinner'
-import ErrorMessage from './components/ErrorMessage'
 import ErrorPopup from './components/ErrorPopup'
 import DiagnosticSidebar from './components/DiagnosticSidebar'
 
@@ -17,7 +16,6 @@ function App() {
   const [format, setFormat] = useState('txt')
   const [transcript, setTranscript] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
   const [apiError, setApiError] = useState(null)
   const [errorType, setErrorType] = useState(null)
   const [retryInfo, setRetryInfo] = useState(null)
@@ -39,7 +37,6 @@ function App() {
 
   const handleSubmit = async () => {
     setLoading(true)
-    setError(null)
     setApiError(null)
     setErrorType(null)
     setRetryInfo(null)
@@ -58,13 +55,14 @@ function App() {
       setApiError(errorMessage)
 
       // Determine error type for appropriate UI treatment
-      const isValidationError = err.status === 422 ||
+      const isValidationError = err.status === 400 ||
+        err.status === 422 ||
         errorMessage.toLowerCase().includes('invalid youtube url') ||
+        errorMessage.toLowerCase().includes('invalid') ||
         errorMessage.toLowerCase().includes('validation error')
 
       setErrorType(isValidationError ? 'validation' : 'server')
       setShowErrorPopup(true)
-      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -100,11 +98,6 @@ function App() {
                 disabled={loading}
               />
             </div>
-
-            <ErrorMessage
-              message={error}
-              onDismiss={() => setError(null)}
-            />
 
             {loading && <LoadingSpinner />}
 

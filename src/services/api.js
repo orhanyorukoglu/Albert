@@ -109,6 +109,7 @@ async function makeRequest(url, format, languagePreference) {
     switch (response.status) {
       case 400:
         error.message = `Bad request: ${errorDetail || 'Invalid request parameters.'}`
+        error.retryable = false
         break
       case 401:
         error.message = `Authentication failed: ${errorDetail || 'Invalid API key.'}`
