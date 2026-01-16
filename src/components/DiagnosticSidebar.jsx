@@ -25,7 +25,7 @@ function DiagnosticItem({ label, children }) {
   )
 }
 
-export default function DiagnosticSidebar() {
+export default function DiagnosticSidebar({ apiError, retryInfo }) {
   const [diagnostics, setDiagnostics] = useState({
     config: null,
     connectivity: { status: 'loading' },
@@ -63,7 +63,21 @@ export default function DiagnosticSidebar() {
 
   useEffect(() => {
     runDiagnostics()
+
+    // Auto-refresh every 20 seconds
+    const interval = setInterval(() => {
+      runDiagnostics()
+    }, 20000)
+
+    return () => clearInterval(interval)
   }, [])
+
+  // Refresh when apiError changes
+  useEffect(() => {
+    if (apiError) {
+      runDiagnostics()
+    }
+  }, [apiError])
 
   return (
     <div className="w-64 bg-gray-900 text-white p-4 flex flex-col h-screen overflow-auto">
@@ -139,6 +153,27 @@ export default function DiagnosticSidebar() {
             <p className="text-xs text-red-400 mt-1">{diagnostics.auth.error}</p>
           )}
         </DiagnosticItem>
+
+        {retryInfo && (
+          <DiagnosticItem label="Retry Status">
+            <div className="flex items-center gap-2">
+              <StatusBadge status="loading" label="Retrying..." />
+            </div>
+            <p className="text-xs text-yellow-400 mt-1">
+              Attempt {retryInfo.attempt}/{retryInfo.maxRetries} - waiting {retryInfo.delay / 1000}s
+            </p>
+            <p className="text-xs text-gray-400 mt-1">{retryInfo.error}</p>
+          </DiagnosticItem>
+        )}
+
+        {apiError && !retryInfo && (
+          <DiagnosticItem label="Last API Error">
+            <div className="flex items-center gap-2">
+              <StatusBadge status="error" label="Failed" />
+            </div>
+            <p className="text-xs text-red-400 mt-1 break-words">{apiError}</p>
+          </DiagnosticItem>
+        )}
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-700">

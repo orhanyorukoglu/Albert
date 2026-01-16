@@ -7,6 +7,7 @@ import CopyButton from './components/CopyButton'
 import DownloadButton from './components/DownloadButton'
 import LoadingSpinner from './components/LoadingSpinner'
 import ErrorMessage from './components/ErrorMessage'
+import ErrorPopup from './components/ErrorPopup'
 import DiagnosticSidebar from './components/DiagnosticSidebar'
 
 const TESTING_MODE = import.meta.env.VITE_TESTING_MODE === 'yes'
@@ -17,6 +18,9 @@ function App() {
   const [transcript, setTranscript] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [apiError, setApiError] = useState(null)
+  const [retryInfo, setRetryInfo] = useState(null)
+  const [showErrorPopup, setShowErrorPopup] = useState(false)
 
   const getCopyContent = () => {
     if (!transcript) return null
@@ -35,13 +39,28 @@ function App() {
   const handleSubmit = async () => {
     setLoading(true)
     setError(null)
+    setApiError(null)
+    setRetryInfo(null)
     setTranscript(null)
 
     try {
-      const result = await extractTranscript(url, format)
+      const result = await extractTranscript(url, format, 'en', (retry) => {
+        // Update retry info for sidebar display
+        setRetryInfo(retry)
+      })
+      setRetryInfo(null)
       setTranscript(result)
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.')
+      setRetryInfo(null)
+      const errorMessage = err.message || 'An unexpected error occurred.'
+      setApiError(errorMessage)
+
+      // Show popup if retries were exhausted or for non-retryable errors
+      if (err.retriesExhausted || err.retryable === false) {
+        setShowErrorPopup(true)
+      }
+
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -49,7 +68,11 @@ function App() {
 
   return (
     <div className="flex min-h-screen">
-      {TESTING_MODE && <DiagnosticSidebar />}
+      {TESTING_MODE && <DiagnosticSidebar apiError={apiError} retryInfo={retryInfo} />}
+      <ErrorPopup
+        error={showErrorPopup ? apiError : null}
+        onClose={() => setShowErrorPopup(false)}
+      />
 
       <div className="flex-1 bg-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-8">

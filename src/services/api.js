@@ -69,7 +69,11 @@ export async function checkApiAuth() {
   }
 }
 
-export async function extractTranscript(url, format = 'json', languagePreference = 'en') {
+// Helper function to delay execution
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
+
+// Helper function to make a single API request
+async function makeRequest(url, format, languagePreference) {
   const response = await fetch(`${API_BASE_URL}/api/v1/extract`, {
     method: 'POST',
     headers: {
@@ -84,17 +88,118 @@ export async function extractTranscript(url, format = 'json', languagePreference
   })
 
   if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error('Too many requests. Please wait a moment.')
+    // Try to get error details from the API response
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || errorData.error || JSON.stringify(errorData)
+    } catch {
+      try {
+        errorDetail = await response.text()
+      } catch {
+        errorDetail = ''
+      }
     }
-    if (response.status === 404) {
-      throw new Error('Could not find transcript for this video.')
+
+    const error = new Error()
+    error.status = response.status
+    error.detail = errorDetail
+
+    // Handle specific status codes
+    switch (response.status) {
+      case 400:
+        error.message = `Bad request: ${errorDetail || 'Invalid request parameters.'}`
+        break
+      case 401:
+        error.message = `Authentication failed: ${errorDetail || 'Invalid API key.'}`
+        error.retryable = false
+        break
+      case 403:
+        error.message = `Access denied: ${errorDetail || 'You do not have permission to access this resource.'}`
+        error.retryable = false
+        break
+      case 404:
+        error.message = `Not found: ${errorDetail || 'Could not find transcript for this video.'}`
+        error.retryable = false
+        break
+      case 422:
+        error.message = `Validation error: ${errorDetail || 'Invalid YouTube URL or parameters.'}`
+        error.retryable = false
+        break
+      case 429:
+        error.message = `Rate limited: ${errorDetail || 'Too many requests. Please wait a moment.'}`
+        error.retryable = true
+        break
+      case 500:
+        error.message = `Server error: ${errorDetail || 'Internal server error. Please try again later.'}`
+        error.retryable = true
+        break
+      case 502:
+        error.message = `Gateway error: ${errorDetail || 'Server is temporarily unavailable.'}`
+        error.retryable = true
+        break
+      case 503:
+        error.message = `Service unavailable: ${errorDetail || 'Server is under maintenance. Please try again later.'}`
+        error.retryable = true
+        break
+      default:
+        error.message = `Error ${response.status}: ${errorDetail || 'An unexpected error occurred.'}`
+        error.retryable = true
     }
-    if (response.status === 401) {
-      throw new Error('Invalid API key.')
-    }
-    throw new Error('Failed to extract transcript. Please try again.')
+
+    throw error
   }
 
   return response.json()
+}
+
+export async function extractTranscript(url, format = 'json', languagePreference = 'en', onRetry = null) {
+  const maxRetries = 3
+  const baseDelay = 2000 // 2 seconds
+
+  let lastError = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await makeRequest(url, format, languagePreference)
+    } catch (err) {
+      lastError = err
+
+      // Network errors
+      if (err.name === 'TypeError') {
+        lastError = new Error('Network error: Unable to connect to the server. Please check your internet connection.')
+        lastError.retryable = true
+        lastError.status = 0
+      }
+
+      // Don't retry non-retryable errors
+      if (lastError.retryable === false) {
+        throw lastError
+      }
+
+      // Don't retry if this was the last attempt
+      if (attempt === maxRetries) {
+        break
+      }
+
+      // Calculate backoff delay (exponential: 2s, 4s, 8s)
+      const backoffDelay = baseDelay * Math.pow(2, attempt)
+
+      // Notify about retry if callback provided
+      if (onRetry) {
+        onRetry({
+          attempt: attempt + 1,
+          maxRetries,
+          delay: backoffDelay,
+          error: lastError.message,
+        })
+      }
+
+      await delay(backoffDelay)
+    }
+  }
+
+  // All retries exhausted
+  lastError.retriesExhausted = true
+  throw lastError
 }
