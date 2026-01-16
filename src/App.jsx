@@ -19,6 +19,7 @@ function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [apiError, setApiError] = useState(null)
+  const [errorType, setErrorType] = useState(null)
   const [retryInfo, setRetryInfo] = useState(null)
   const [showErrorPopup, setShowErrorPopup] = useState(false)
 
@@ -40,6 +41,7 @@ function App() {
     setLoading(true)
     setError(null)
     setApiError(null)
+    setErrorType(null)
     setRetryInfo(null)
     setTranscript(null)
 
@@ -55,11 +57,13 @@ function App() {
       const errorMessage = err.message || 'An unexpected error occurred.'
       setApiError(errorMessage)
 
-      // Show popup if retries were exhausted or for non-retryable errors
-      if (err.retriesExhausted || err.retryable === false) {
-        setShowErrorPopup(true)
-      }
+      // Determine error type for appropriate UI treatment
+      const isValidationError = err.status === 422 ||
+        errorMessage.toLowerCase().includes('invalid youtube url') ||
+        errorMessage.toLowerCase().includes('validation error')
 
+      setErrorType(isValidationError ? 'validation' : 'server')
+      setShowErrorPopup(true)
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -71,6 +75,7 @@ function App() {
       {TESTING_MODE && <DiagnosticSidebar apiError={apiError} retryInfo={retryInfo} />}
       <ErrorPopup
         error={showErrorPopup ? apiError : null}
+        errorType={errorType}
         onClose={() => setShowErrorPopup(false)}
       />
 
