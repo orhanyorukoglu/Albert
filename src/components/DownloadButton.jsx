@@ -1,39 +1,28 @@
-import streamSaver from 'streamsaver'
-
 export default function DownloadButton({ content, format, disabled }) {
-  const handleDownload = async () => {
+  const isChrome = /Chrome/.test(navigator.userAgent) && !/Edg/.test(navigator.userAgent)
+
+  // Hide download button for Chrome users due to blob URL limitations
+  if (isChrome) {
+    return null
+  }
+
+  const handleDownload = () => {
     if (!content || disabled) return
 
     const text = typeof content === 'string' ? content : JSON.stringify(content, null, 2)
     const filename = `transcript.${format}`
 
-    // Use StreamSaver for better Chrome compatibility
-    const blob = new Blob([text], { type: 'text/plain' })
-    const fileStream = streamSaver.createWriteStream(filename, {
-      size: blob.size
-    })
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
 
-    const readableStream = blob.stream()
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
 
-    // Use pipeTo if available, otherwise manual pipe
-    if (readableStream.pipeTo) {
-      await readableStream.pipeTo(fileStream)
-    } else {
-      const writer = fileStream.getWriter()
-      const reader = readableStream.getReader()
-
-      const pump = async () => {
-        const { done, value } = await reader.read()
-        if (done) {
-          writer.close()
-          return
-        }
-        await writer.write(value)
-        await pump()
-      }
-
-      await pump()
-    }
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
 
   return (
