@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { getConfig, checkConnectivity, checkHealth, checkApiAuth } from '../services/api'
 
+const REFRESH_RATE_SECONDS = parseInt(import.meta.env.VITE_TESTING_REFRESH_RATE, 10) || 60
+
 function StatusBadge({ status, label }) {
   const colors = {
     ok: 'bg-green-100 text-green-800',
@@ -64,10 +66,9 @@ export default function DiagnosticSidebar({ apiError, retryInfo }) {
   useEffect(() => {
     runDiagnostics()
 
-    // Auto-refresh every 20 seconds
     const interval = setInterval(() => {
       runDiagnostics()
-    }, 20000)
+    }, REFRESH_RATE_SECONDS * 1000)
 
     return () => clearInterval(interval)
   }, [])
