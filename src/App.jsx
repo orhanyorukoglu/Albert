@@ -20,12 +20,15 @@ function App() {
 
   const getCopyContent = () => {
     if (!transcript) return null
-    if (typeof transcript === 'string') return transcript
+    if (typeof transcript === 'string') {
+      return format === 'txt' ? transcript.replace(/\n+/g, ' ').trim() : transcript
+    }
     if (format === 'srt' && transcript.srt_content) return transcript.srt_content
     if (format === 'vtt' && transcript.vtt_content) return transcript.vtt_content
-    if (format === 'txt' && transcript.full_text) return transcript.full_text
-    if (format === 'txt' && transcript.txt_content) return transcript.txt_content
-    if (format === 'txt' && transcript.transcript) return transcript.transcript
+    if (format === 'txt') {
+      const text = transcript.full_text || transcript.txt_content || transcript.transcript || ''
+      return text.replace(/\n+/g, ' ').trim()
+    }
     return JSON.stringify(transcript, null, 2)
   }
 
