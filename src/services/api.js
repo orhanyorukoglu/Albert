@@ -253,3 +253,28 @@ export async function extractTranscript(url, format = 'json', options = {}, onRe
   lastError.retriesExhausted = true
   throw lastError
 }
+
+export async function getThumbnail(url, quality = 'hq') {
+  const baseUrl = getApiBaseUrl()
+  const params = new URLSearchParams({ url, quality })
+
+  const response = await fetch(`${baseUrl}/api/v1/thumbnail?${params}`, {
+    method: 'GET',
+    headers: {
+      'X-API-Key': API_KEY,
+    },
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to fetch thumbnail (${response.status})`)
+  }
+
+  return response.json()
+}

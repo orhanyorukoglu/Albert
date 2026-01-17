@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { extractTranscript } from './services/api'
+import { extractTranscript, getThumbnail } from './services/api'
 import UrlInput from './components/UrlInput'
 import FormatSelector from './components/FormatSelector'
 import TranscriptDisplay from './components/TranscriptDisplay'
@@ -25,6 +25,7 @@ function App() {
   const [showErrorPopup, setShowErrorPopup] = useState(false)
   const [availableLanguages, setAvailableLanguages] = useState([])
   const [selectedLanguage, setSelectedLanguage] = useState('en')
+  const [thumbnailUrl, setThumbnailUrl] = useState(null)
 
   // Helper to format time for SRT/VTT
   const formatTime = (seconds, forVtt = false) => {
@@ -101,6 +102,7 @@ function App() {
     setRetryInfo(null)
     setTranscript(null)
     setAllTranscripts(null)
+    setThumbnailUrl(null)
 
     try {
       const result = await extractTranscript(url, format, { fetchAllLanguages: true }, (retry) => {
@@ -130,6 +132,16 @@ function App() {
       // Store available languages from response
       if (result.available_languages) {
         setAvailableLanguages(result.available_languages)
+      }
+
+      // Fetch thumbnail
+      try {
+        const thumbnailResult = await getThumbnail(url)
+        if (thumbnailResult.thumbnail_url) {
+          setThumbnailUrl(thumbnailResult.thumbnail_url)
+        }
+      } catch {
+        // Thumbnail fetch is non-critical, silently ignore errors
       }
     } catch (err) {
       setRetryInfo(null)
@@ -168,6 +180,7 @@ function App() {
       setAvailableLanguages([])
       setSelectedLanguage('en')
       setAllTranscripts(null)
+      setThumbnailUrl(null)
     }
   }
 
@@ -182,9 +195,11 @@ function App() {
 
       <div className="flex-1 bg-gray-100">
         <div className="max-w-3xl mx-auto px-4 py-8">
-          <div className="flex justify-end mb-4">
-            <ApiEnvironmentSwitcher />
-          </div>
+          {TESTING_MODE && (
+            <div className="flex justify-end mb-4">
+              <ApiEnvironmentSwitcher />
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-center mb-8">
             Albert - YouTube Transcript Extractor
           </h1>
@@ -209,6 +224,16 @@ function App() {
 
             {transcript && !loading && (
               <>
+                {thumbnailUrl && (
+                  <div className="mt-6 flex justify-center">
+                    <img
+                      src={thumbnailUrl}
+                      alt="Video thumbnail"
+                      className="rounded-lg shadow-sm max-w-full h-auto"
+                      style={{ maxHeight: '200px' }}
+                    />
+                  </div>
+                )}
                 {availableLanguages.length > 1 && (
                   <LanguageSelector
                     languages={availableLanguages}

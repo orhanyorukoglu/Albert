@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getConfig, checkConnectivity, checkHealth, checkApiAuth } from '../services/api'
+import { getConfig, checkConnectivity, checkHealth } from '../services/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -44,7 +44,6 @@ export default function DiagnosticSidebar({ apiError, retryInfo }) {
     config: null,
     connectivity: { status: 'loading' },
     health: { status: 'loading' },
-    auth: { status: 'loading' },
   })
   const [lastCheck, setLastCheck] = useState(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -55,23 +54,20 @@ export default function DiagnosticSidebar({ apiError, retryInfo }) {
       ...prev,
       connectivity: { status: 'loading' },
       health: { status: 'loading' },
-      auth: { status: 'loading' },
     }))
 
     const config = getConfig()
     setDiagnostics(prev => ({ ...prev, config }))
 
-    const [connectivity, health, auth] = await Promise.all([
+    const [connectivity, health] = await Promise.all([
       checkConnectivity(),
       checkHealth(),
-      checkApiAuth(),
     ])
 
     setDiagnostics(prev => ({
       ...prev,
       connectivity: { ...connectivity, status: connectivity.connected ? 'ok' : 'error' },
       health: { ...health, status: health.healthy ? 'ok' : 'error' },
-      auth: { ...auth, status: auth.authenticated ? 'ok' : 'error' },
     }))
 
     setLastCheck(new Date().toLocaleTimeString())
@@ -156,22 +152,6 @@ export default function DiagnosticSidebar({ apiError, retryInfo }) {
             )}
             {diagnostics.health.error && (
               <p className="text-xs text-red-400 mt-1">{diagnostics.health.error}</p>
-            )}
-          </DiagnosticItem>
-
-          <DiagnosticItem label="API Authentication">
-            <div className="flex items-center gap-2">
-              <StatusBadge
-                status={diagnostics.auth.status}
-                label={diagnostics.auth.status === 'loading' ? 'Checking...' :
-                       diagnostics.auth.authenticated ? 'Valid' : 'Invalid'}
-              />
-              {diagnostics.auth.status !== 'loading' && (
-                <span className="text-xs text-slate-400">HTTP {diagnostics.auth.status}</span>
-              )}
-            </div>
-            {diagnostics.auth.error && (
-              <p className="text-xs text-red-400 mt-1">{diagnostics.auth.error}</p>
             )}
           </DiagnosticItem>
 
