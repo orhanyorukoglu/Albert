@@ -23,10 +23,11 @@ function LanguageSelector({ languages, selectedLanguage, onChange, disabled }) {
     onChange(code, isGenerated)
   }
 
-  // Create current value from selectedLanguage
-  const currentValue = sortedLanguages.find(l => l.code === selectedLanguage)
-    ? `${selectedLanguage}-${sortedLanguages.find(l => l.code === selectedLanguage)?.is_generated ? 'auto' : 'manual'}`
-    : undefined
+  // Create current value from selectedLanguage (use empty string instead of undefined for controlled component)
+  const matchedLang = sortedLanguages.find(l => l.code === selectedLanguage)
+  const currentValue = matchedLang
+    ? `${selectedLanguage}-${matchedLang.is_generated ? 'auto' : 'manual'}`
+    : ''
 
   return (
     <div className="mt-4">

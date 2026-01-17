@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { extractTranscript, getThumbnail } from './services/api'
+import { extractTranscript, getThumbnail, getMetadata } from './services/api'
 import UrlInput from './components/UrlInput'
 import FormatSelector from './components/FormatSelector'
 import TranscriptDisplay from './components/TranscriptDisplay'
@@ -26,6 +26,7 @@ function App() {
   const [availableLanguages, setAvailableLanguages] = useState([])
   const [selectedLanguage, setSelectedLanguage] = useState('en')
   const [thumbnailUrl, setThumbnailUrl] = useState(null)
+  const [videoMetadata, setVideoMetadata] = useState(null)
 
   // Helper to format time for SRT/VTT
   const formatTime = (seconds, forVtt = false) => {
@@ -103,6 +104,7 @@ function App() {
     setTranscript(null)
     setAllTranscripts(null)
     setThumbnailUrl(null)
+    setVideoMetadata(null)
 
     try {
       const result = await extractTranscript(url, format, { fetchAllLanguages: true }, (retry) => {
@@ -134,14 +136,17 @@ function App() {
         setAvailableLanguages(result.available_languages)
       }
 
-      // Fetch thumbnail
-      try {
-        const thumbnailResult = await getThumbnail(url)
-        if (thumbnailResult.thumbnail_url) {
-          setThumbnailUrl(thumbnailResult.thumbnail_url)
-        }
-      } catch {
-        // Thumbnail fetch is non-critical, silently ignore errors
+      // Fetch thumbnail and metadata in parallel
+      const [thumbnailResult, metadataResult] = await Promise.all([
+        getThumbnail(url).catch(() => null),
+        getMetadata(url).catch(() => null),
+      ])
+
+      if (thumbnailResult?.thumbnail_url) {
+        setThumbnailUrl(thumbnailResult.thumbnail_url)
+      }
+      if (metadataResult) {
+        setVideoMetadata(metadataResult)
       }
     } catch (err) {
       setRetryInfo(null)
@@ -162,14 +167,20 @@ function App() {
     }
   }
 
-  const handleLanguageChange = (langCode) => {
+  const handleLanguageChange = (langCode, isGenerated) => {
     setSelectedLanguage(langCode)
     // Switch transcript instantly from cached data (no API call needed)
-    if (allTranscripts && allTranscripts[langCode]) {
-      setTranscript({
-        ...allTranscripts[langCode],
-        language: langCode,
-      })
+    if (allTranscripts) {
+      // Try exact match first, then try with language code only
+      const transcript = allTranscripts[langCode] ||
+        Object.entries(allTranscripts).find(([key]) => key.startsWith(langCode))?.[1]
+
+      if (transcript) {
+        setTranscript({
+          ...transcript,
+          language: langCode,
+        })
+      }
     }
   }
 
@@ -181,6 +192,7 @@ function App() {
       setSelectedLanguage('en')
       setAllTranscripts(null)
       setThumbnailUrl(null)
+      setVideoMetadata(null)
     }
   }
 
@@ -224,14 +236,34 @@ function App() {
 
             {transcript && !loading && (
               <>
-                {thumbnailUrl && (
-                  <div className="mt-6 flex justify-center">
-                    <img
-                      src={thumbnailUrl}
-                      alt="Video thumbnail"
-                      className="rounded-lg shadow-sm max-w-full h-auto"
-                      style={{ maxHeight: '200px' }}
-                    />
+                {(thumbnailUrl || videoMetadata) && (
+                  <div className="mt-6 flex gap-4">
+                    {thumbnailUrl && (
+                      <img
+                        src={thumbnailUrl}
+                        alt="Video thumbnail"
+                        className="rounded-lg shadow-sm w-48 h-auto flex-shrink-0"
+                      />
+                    )}
+                    {videoMetadata && (
+                      <div className="text-sm text-gray-600 space-y-1">
+                        {videoMetadata.title && (
+                          <p className="font-medium text-gray-900 line-clamp-2">{videoMetadata.title}</p>
+                        )}
+                        {videoMetadata.channel && (
+                          <p className="text-gray-500">{videoMetadata.channel}</p>
+                        )}
+                        {videoMetadata.duration && (
+                          <p className="text-gray-400">Duration: {videoMetadata.duration}</p>
+                        )}
+                        {videoMetadata.view_count && (
+                          <p className="text-gray-400">{Number(videoMetadata.view_count).toLocaleString()} views</p>
+                        )}
+                        {videoMetadata.upload_date && (
+                          <p className="text-gray-400">Uploaded: {videoMetadata.upload_date}</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
                 {availableLanguages.length > 1 && (

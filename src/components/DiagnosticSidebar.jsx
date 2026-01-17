@@ -92,7 +92,7 @@ export default function DiagnosticSidebar({ apiError, retryInfo }) {
   }, [apiError])
 
   return (
-    <div className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen">
+    <div className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen sticky top-0">
       <div className="flex items-center justify-between p-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Diagnostics</h2>
         <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50">

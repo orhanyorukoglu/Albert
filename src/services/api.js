@@ -278,3 +278,28 @@ export async function getThumbnail(url, quality = 'hq') {
 
   return response.json()
 }
+
+export async function getMetadata(url) {
+  const baseUrl = getApiBaseUrl()
+  const params = new URLSearchParams({ url })
+
+  const response = await fetch(`${baseUrl}/api/v1/metadata?${params}`, {
+    method: 'GET',
+    headers: {
+      'X-API-Key': API_KEY,
+    },
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to fetch metadata (${response.status})`)
+  }
+
+  return response.json()
+}
