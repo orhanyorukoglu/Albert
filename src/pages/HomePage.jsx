@@ -31,6 +31,20 @@ export default function HomePage() {
   const [thumbnailUrl, setThumbnailUrl] = useState(null)
   const [videoMetadata, setVideoMetadata] = useState(null)
 
+  // Helper to format upload date (YYYYMMDD -> readable format)
+  const formatUploadDate = (dateStr) => {
+    if (!dateStr || dateStr.length !== 8) return dateStr
+    const year = dateStr.substring(0, 4)
+    const month = dateStr.substring(4, 6)
+    const day = dateStr.substring(6, 8)
+    const date = new Date(year, month - 1, day)
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  }
+
   // Helper to format time for SRT/VTT
   const formatTime = (seconds, forVtt = false) => {
     const hrs = Math.floor(seconds / 3600)
@@ -288,7 +302,7 @@ export default function HomePage() {
                           <p className="text-gray-400">{Number(videoMetadata.view_count).toLocaleString()} views</p>
                         )}
                         {videoMetadata.upload_date && (
-                          <p className="text-gray-400">Uploaded: {videoMetadata.upload_date}</p>
+                          <p className="text-gray-400">Uploaded: {formatUploadDate(videoMetadata.upload_date)}</p>
                         )}
                       </div>
                     )}
