@@ -196,9 +196,20 @@ export function useTranscriptExtractor() {
     if (hasTranscripts) {
       setAllTranscripts(result.transcripts)
 
-      // Set default language from API or fallback to first available
-      const defaultLang = result.default_language || 'en'
-      const langToUse = result.transcripts[defaultLang] ? defaultLang : Object.keys(result.transcripts)[0]
+      // Find the best English option or fall back to first available
+      const availableCodes = Object.keys(result.transcripts)
+      const findEnglish = () => {
+        // Try exact 'en' first, then any English variant (en-US, en-GB, etc.)
+        if (result.transcripts['en']) return 'en'
+        const englishVariant = availableCodes.find(code => code.startsWith('en'))
+        return englishVariant || null
+      }
+
+      const defaultLang = result.default_language
+      const englishLang = findEnglish()
+
+      // Prefer: 1) English if available, 2) API default, 3) first available
+      const langToUse = englishLang || (defaultLang && result.transcripts[defaultLang] ? defaultLang : availableCodes[0])
       setSelectedLanguage(langToUse)
 
       // Build transcript object for display from the selected language
@@ -211,7 +222,14 @@ export function useTranscriptExtractor() {
 
       // Build available languages from transcripts dict if not provided separately
       if (result.available_languages && result.available_languages.length > 0) {
-        setAvailableLanguages(result.available_languages)
+        // Deduplicate by code, keeping first occurrence
+        const seen = new Set()
+        const uniqueLangs = result.available_languages.filter(lang => {
+          if (seen.has(lang.code)) return false
+          seen.add(lang.code)
+          return true
+        })
+        setAvailableLanguages(uniqueLangs)
       } else {
         const langs = Object.entries(result.transcripts).map(([code, data]) => ({
           code,

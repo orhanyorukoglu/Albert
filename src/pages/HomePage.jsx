@@ -143,6 +143,9 @@ export default function HomePage() {
             transcript={transcript}
             format={format}
             onFormatChange={handleFormatChange}
+            availableLanguages={availableLanguages}
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={handleLanguageChange}
             onCopy={handleCopy}
             onDownload={handleDownload}
             onBack={handleBack}

@@ -1,9 +1,15 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check } from 'lucide-react'
+import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check, Globe, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { formatDuration, formatViewCount, formatUploadDate, segmentsToSrt, segmentsToVtt } from '../../utils/formatters'
 
 export default function TranscriptResultView({
@@ -12,6 +18,9 @@ export default function TranscriptResultView({
   transcript,
   format,
   onFormatChange,
+  availableLanguages = [],
+  selectedLanguage,
+  onLanguageChange,
   onCopy,
   onDownload,
   onBack,
@@ -162,7 +171,7 @@ export default function TranscriptResultView({
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* Search */}
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <div className="relative flex-1 min-w-[150px] max-w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               type="text"
@@ -173,27 +182,37 @@ export default function TranscriptResultView({
             />
           </div>
 
-          {/* Format Toggle */}
-          <ToggleGroup
-            type="single"
-            value={format}
-            onValueChange={(value) => value && onFormatChange(value)}
-            className="bg-gray-100 p-1 rounded-lg"
-          >
-            {['txt', 'srt', 'vtt', 'json'].map((fmt) => (
-              <ToggleGroupItem
-                key={fmt}
-                value={fmt}
-                className={`px-4 h-8 text-sm font-medium rounded-md transition-all ${
-                  format === fmt
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {fmt.toUpperCase()}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+          {/* Format Selector */}
+          <Select value={format} onValueChange={onFormatChange}>
+            <SelectTrigger className="w-[110px] h-10 bg-white">
+              <FileText className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="txt">TXT</SelectItem>
+              <SelectItem value="srt">SRT</SelectItem>
+              <SelectItem value="vtt">VTT</SelectItem>
+              <SelectItem value="json">JSON</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Language Selector */}
+          {availableLanguages.length > 1 && (
+            <Select value={selectedLanguage} onValueChange={(value) => onLanguageChange(value)}>
+              <SelectTrigger className="w-[140px] h-10 bg-white">
+                <Globe className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
+                <SelectValue className="truncate" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableLanguages.map((lang, index) => (
+                  <SelectItem key={`${lang.code}-${index}`} value={lang.code}>
+                    {lang.name || lang.code}
+                    {lang.is_generated ? ' (auto)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Copy Button */}
           <Button

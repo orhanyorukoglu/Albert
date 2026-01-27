@@ -2,7 +2,7 @@ import { X, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
-const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/
+const YOUTUBE_URL_REGEX = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w-]+/
 
 export default function InputSection({ url, onUrlChange, onSubmit, isLoading, placeholder = "Paste a YouTube URL here..." }) {
   const isValidUrl = YOUTUBE_URL_REGEX.test(url)
