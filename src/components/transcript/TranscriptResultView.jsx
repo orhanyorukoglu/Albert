@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { formatDuration, formatViewCount, formatUploadDate, segmentsToSrt, segmentsToVtt } from '../../utils/formatters'
+import { formatDuration, formatViewCount, formatUploadDate, segmentsToSrt, segmentsToVtt, segmentsToParagraphs } from '../../utils/formatters'
 
 export default function TranscriptResultView({
   videoId,
@@ -184,12 +184,13 @@ export default function TranscriptResultView({
 
           {/* Format Selector */}
           <Select value={format} onValueChange={onFormatChange}>
-            <SelectTrigger className="w-[110px] h-10 bg-white">
+            <SelectTrigger className="w-[130px] h-10 bg-white">
               <FileText className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="txt">TXT</SelectItem>
+              <SelectItem value="paragraph">Paragraph</SelectItem>
               <SelectItem value="srt">SRT</SelectItem>
               <SelectItem value="vtt">VTT</SelectItem>
               <SelectItem value="json">JSON</SelectItem>
@@ -266,6 +267,19 @@ export default function TranscriptResultView({
                       </p>
                     </div>
                   ))}
+                </div>
+              ) : format === 'paragraph' ? (
+                // Paragraph format - readable flowing text
+                <div className="prose prose-gray max-w-none">
+                  {segments.length > 0 ? (
+                    segmentsToParagraphs(segments).map((paragraph, index) => (
+                      <p key={index} className="text-gray-800 leading-relaxed mb-4 last:mb-0">
+                        {searchQuery ? highlightText(paragraph, searchQuery) : paragraph}
+                      </p>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No transcript data</p>
+                  )}
                 </div>
               ) : format === 'srt' ? (
                 // SRT format - monospace

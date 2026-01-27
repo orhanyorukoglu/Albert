@@ -168,6 +168,8 @@ export function getFormattedContent(transcript, format) {
         return segmentsToVtt(transcript.segments)
       case 'txt':
         return segmentsToText(transcript.segments)
+      case 'paragraph':
+        return segmentsToParagraphs(transcript.segments).join('\n\n')
       case 'json':
       default:
         return JSON.stringify(transcript, null, 2)
