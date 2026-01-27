@@ -1,6 +1,13 @@
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
-function LanguageSelector({ languages, selectedLanguage, onChange, disabled }) {
+function LanguageSelector({ languages, selectedLanguage, onChange, disabled, compact }) {
   if (!languages || languages.length === 0) return null
 
   // Sort languages: manual captions first, then auto-generated
@@ -28,6 +35,28 @@ function LanguageSelector({ languages, selectedLanguage, onChange, disabled }) {
   const currentValue = matchedLang
     ? `${selectedLanguage}-${matchedLang.is_generated ? 'auto' : 'manual'}`
     : ''
+
+  // Compact mode: dropdown selector for transcript header
+  if (compact) {
+    return (
+      <Select value={currentValue} onValueChange={handleValueChange} disabled={disabled}>
+        <SelectTrigger className="w-auto min-w-[120px] h-8 text-sm">
+          <SelectValue placeholder="Language" />
+        </SelectTrigger>
+        <SelectContent>
+          {sortedLanguages.map((lang) => {
+            const uniqueValue = `${lang.code}-${lang.is_generated ? 'auto' : 'manual'}`
+            return (
+              <SelectItem key={uniqueValue} value={uniqueValue}>
+                {lang.name}
+                {lang.is_generated && ' (auto)'}
+              </SelectItem>
+            )
+          })}
+        </SelectContent>
+      </Select>
+    )
+  }
 
   return (
     <div className="mt-4">

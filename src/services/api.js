@@ -14,13 +14,21 @@ export const API_ENVIRONMENTS = {
 
 const STORAGE_KEY = 'albert_api_environment'
 
-// Get the current environment from localStorage or default to production
+// Default environment from .env (production or local)
+const DEFAULT_ENVIRONMENT = import.meta.env.VITE_API_ENVIRONMENT || 'production'
+
+// Get the current environment from localStorage or default from .env
 export function getApiEnvironment() {
   const stored = localStorage.getItem(STORAGE_KEY)
   if (stored && API_ENVIRONMENTS[stored]) {
     return stored
   }
-  return 'production'
+  return DEFAULT_ENVIRONMENT
+}
+
+// Get the default environment from .env
+export function getDefaultEnvironment() {
+  return DEFAULT_ENVIRONMENT
 }
 
 // Set the API environment
@@ -314,4 +322,92 @@ export async function getMetadata(url) {
   }
 
   return response.json()
+}
+
+/**
+ * List user's saved transcripts.
+ * Requires authentication (JWT).
+ */
+export async function listTranscripts({ limit = 20, offset = 0 } = {}, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'X-API-Key': API_KEY,
+  }
+
+  // Add auth token if available
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      } else {
+        console.warn('listTranscripts: No token returned from getAccessToken')
+      }
+    } catch (err) {
+      console.error('listTranscripts: Error getting access token:', err)
+    }
+  } else {
+    console.warn('listTranscripts: No getAccessToken function provided')
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/transcripts?limit=${limit}&offset=${offset}`, {
+    method: 'GET',
+    headers,
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to fetch transcripts (${response.status})`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Delete a saved transcript.
+ * Requires authentication (JWT).
+ */
+export async function deleteTranscript(transcriptId, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'X-API-Key': API_KEY,
+  }
+
+  // Add auth token if available
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('deleteTranscript: Error getting access token:', err)
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/transcripts/${transcriptId}`, {
+    method: 'DELETE',
+    headers,
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to delete transcript (${response.status})`)
+  }
+
+  return true
 }
