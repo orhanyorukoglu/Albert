@@ -19,11 +19,14 @@ export default function UrlInput({ value, onChange, onSubmit, disabled }) {
     <form onSubmit={handleSubmit} className="flex gap-3">
       <div className="flex-1">
         <Input
+          id="youtube-url"
+          name="youtube-url"
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Enter YouTube URL..."
           disabled={disabled}
+          aria-label="YouTube URL"
           className={`h-11 ${showError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
         />
         {showError && (

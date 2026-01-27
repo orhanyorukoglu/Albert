@@ -16,11 +16,11 @@ const FORMATS = [
 export default function FormatSelector({ value, onChange, disabled }) {
   return (
     <div className="flex items-center gap-4">
-      <label className="text-gray-700 font-medium">
+      <label htmlFor="format-selector" className="text-gray-700 font-medium">
         Transcript Format:
       </label>
-      <Select value={value} onValueChange={onChange} disabled={disabled}>
-        <SelectTrigger className="w-32">
+      <Select value={value} onValueChange={onChange} disabled={disabled} name="format">
+        <SelectTrigger id="format-selector" className="w-32">
           <SelectValue placeholder="Select format" />
         </SelectTrigger>
         <SelectContent>

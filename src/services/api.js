@@ -33,7 +33,7 @@ export function setApiEnvironment(env) {
 }
 
 // Get the current API base URL
-function getApiBaseUrl() {
+export function getApiBaseUrl() {
   const env = getApiEnvironment()
   return API_ENVIRONMENTS[env].url
 }
@@ -116,23 +116,35 @@ export async function checkApiAuth() {
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // Helper function to make a single API request
-async function makeRequest(url, format, options = {}) {
+async function makeRequest(url, format, options = {}, getAccessToken = null) {
   const baseUrl = getApiBaseUrl()
-  const { languagePreference, fetchAllLanguages } = options
+  const { fetchAllLanguages = true } = options
 
-  const body = { url, format }
-  if (fetchAllLanguages) {
-    body.fetch_all_languages = true
-  } else if (languagePreference) {
-    body.language_preference = languagePreference
+  // Request body - fetch_all_languages returns all transcripts at once
+  const body = { url, format, fetch_all_languages: fetchAllLanguages }
+
+  // Build headers
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-API-Key': API_KEY,
+  }
+
+  // Add Authorization header if getAccessToken is provided
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch {
+      // If token retrieval fails, continue without it
+      // The request will proceed with just the API key
+    }
   }
 
   const response = await fetch(`${baseUrl}/api/v1/extract`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': API_KEY,
-    },
+    headers,
     body: JSON.stringify(body),
   })
 
@@ -203,7 +215,7 @@ async function makeRequest(url, format, options = {}) {
   return response.json()
 }
 
-export async function extractTranscript(url, format = 'json', options = {}, onRetry = null) {
+export async function extractTranscript(url, format = 'json', options = {}, onRetry = null, getAccessToken = null) {
   const maxRetries = 3
   const baseDelay = 2000 // 2 seconds
 
@@ -211,7 +223,7 @@ export async function extractTranscript(url, format = 'json', options = {}, onRe
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await makeRequest(url, format, options)
+      return await makeRequest(url, format, options, getAccessToken)
     } catch (err) {
       lastError = err
 
