@@ -47,7 +47,6 @@ export default function HomePage() {
     // Error state
     error,
     errorType,
-    retryInfo,
 
     // Handlers
     handleUrlChange,
@@ -185,8 +184,6 @@ export default function HomePage() {
 
       {/* Main area with sidebar and content */}
       <div className="flex flex-1 min-h-0">
-        {TESTING_MODE && <DiagnosticSidebar apiError={error} retryInfo={retryInfo} />}
-
         {/* History Sidebar - only shows when authenticated */}
         <HistorySidebar
           onSelectTranscript={handleSelectFromHistory}
@@ -219,7 +216,7 @@ export default function HomePage() {
               {/* Loading state */}
               {isLoading && (
                 <div className="mb-8">
-                  <LoadingState retryInfo={retryInfo} />
+                  <LoadingState />
                 </div>
               )}
 
@@ -247,6 +244,8 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      {TESTING_MODE && <DiagnosticSidebar apiError={error} />}
     </div>
   )
 }

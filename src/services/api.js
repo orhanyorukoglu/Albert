@@ -120,9 +120,6 @@ export async function checkApiAuth() {
   }
 }
 
-// Helper function to delay execution
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
 // Helper function to make a single API request
 async function makeRequest(url, format, options = {}, getAccessToken = null) {
   const baseUrl = getApiBaseUrl()
@@ -223,55 +220,18 @@ async function makeRequest(url, format, options = {}, getAccessToken = null) {
   return response.json()
 }
 
-export async function extractTranscript(url, format = 'json', options = {}, onRetry = null, getAccessToken = null) {
-  const maxRetries = 3
-  const baseDelay = 2000 // 2 seconds
-
-  let lastError = null
-
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await makeRequest(url, format, options, getAccessToken)
-    } catch (err) {
-      lastError = err
-
-      // Network errors
-      if (err.name === 'TypeError') {
-        lastError = new Error('Network error: Unable to connect to the server. Please check your internet connection.')
-        lastError.retryable = true
-        lastError.status = 0
-      }
-
-      // Don't retry non-retryable errors
-      if (lastError.retryable === false) {
-        throw lastError
-      }
-
-      // Don't retry if this was the last attempt
-      if (attempt === maxRetries) {
-        break
-      }
-
-      // Calculate backoff delay (exponential: 2s, 4s, 8s)
-      const backoffDelay = baseDelay * Math.pow(2, attempt)
-
-      // Notify about retry if callback provided
-      if (onRetry) {
-        onRetry({
-          attempt: attempt + 1,
-          maxRetries,
-          delay: backoffDelay,
-          error: lastError.message,
-        })
-      }
-
-      await delay(backoffDelay)
+export async function extractTranscript(url, format = 'json', options = {}, getAccessToken = null) {
+  try {
+    return await makeRequest(url, format, options, getAccessToken)
+  } catch (err) {
+    if (err.name === 'TypeError') {
+      const baseUrl = getApiBaseUrl()
+      const error = new Error(`Cannot reach backend server at ${baseUrl}. Make sure the server is running.`)
+      error.status = 0
+      throw error
     }
+    throw err
   }
-
-  // All retries exhausted
-  lastError.retriesExhausted = true
-  throw lastError
 }
 
 export async function getThumbnail(url, quality = 'hq') {

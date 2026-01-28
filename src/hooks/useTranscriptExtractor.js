@@ -26,11 +26,6 @@ function hasValidTranscriptData(result) {
 }
 
 /**
- * Delay helper
- */
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
-
-/**
  * Custom hook to manage transcript extraction state and logic
  * @returns {Object} State and handlers for transcript extraction
  */
@@ -62,7 +57,6 @@ export function useTranscriptExtractor() {
   // Error state
   const [error, setError] = useState(null)
   const [errorType, setErrorType] = useState(null)
-  const [retryInfo, setRetryInfo] = useState(null)
 
   /**
    * Reset all state to initial values
@@ -80,7 +74,6 @@ export function useTranscriptExtractor() {
     setIsSaved(false)
     setError(null)
     setErrorType(null)
-    setRetryInfo(null)
   }
 
   /**
@@ -127,13 +120,13 @@ export function useTranscriptExtractor() {
   }
 
   /**
-   * Submit URL and extract transcript with retry logic for empty responses
+   * Submit URL and extract transcript (single request, no retries —
+   * the backend already tries multiple extraction methods internally)
    */
   const handleSubmit = async () => {
     setStatus('loading')
     setError(null)
     setErrorType(null)
-    setRetryInfo(null)
     setTranscript(null)
     setAllTranscripts(null)
     setThumbnailUrl(null)
@@ -141,62 +134,38 @@ export function useTranscriptExtractor() {
     setTranscriptId(null)
     setIsSaved(false)
 
-    const maxEmptyRetries = 2
-    let lastResult = null
+    let result
+    try {
+      result = await extractTranscript(url, format, {}, getAccessToken)
+    } catch (err) {
+      const errorMessage = err.message || 'An unexpected error occurred.'
+      setError(errorMessage)
 
-    for (let attempt = 0; attempt <= maxEmptyRetries; attempt++) {
-      try {
-        const result = await extractTranscript(url, format, {}, (retry) => {
-          setRetryInfo(retry)
-        }, getAccessToken)
+      const isNotFoundError = err.status === 404 ||
+        errorMessage.toLowerCase().includes('no transcript available') ||
+        errorMessage.toLowerCase().includes('transcripts are disabled') ||
+        errorMessage.toLowerCase().includes('no transcript found')
 
-        // Check if response has valid transcript data
-        if (hasValidTranscriptData(result)) {
-          setRetryInfo(null)
-          lastResult = result
-          break
-        }
+      const isValidationError = err.status === 400 ||
+        err.status === 422 ||
+        errorMessage.toLowerCase().includes('invalid youtube url') ||
+        errorMessage.toLowerCase().includes('invalid') ||
+        errorMessage.toLowerCase().includes('validation error')
 
-        // Response was empty/invalid - retry if we have attempts left
-        if (attempt < maxEmptyRetries) {
-          console.warn(`Empty response on attempt ${attempt + 1}, retrying...`)
-          setRetryInfo({
-            attempt: attempt + 1,
-            maxRetries: maxEmptyRetries,
-            delay: 1500,
-            error: 'Empty response, retrying...',
-          })
-          await delay(1500)
-        } else {
-          // All retries exhausted with empty responses
-          console.error('API Response has no transcript data after retries:', result)
-          setRetryInfo(null)
-          setError('No transcript data returned. The video may not have captions available.')
-          setErrorType('server')
-          setStatus('error')
-          return
-        }
-      } catch (err) {
-        setRetryInfo(null)
-        const errorMessage = err.message || 'An unexpected error occurred.'
-        setError(errorMessage)
-
-        // Determine error type for appropriate UI treatment
-        const isValidationError = err.status === 400 ||
-          err.status === 422 ||
-          errorMessage.toLowerCase().includes('invalid youtube url') ||
-          errorMessage.toLowerCase().includes('invalid') ||
-          errorMessage.toLowerCase().includes('validation error')
-
-        setErrorType(isValidationError ? 'validation' : 'server')
-        setStatus('error')
-        return
-      }
+      setErrorType(isNotFoundError ? 'not_found' : isValidationError ? 'validation' : 'server')
+      setStatus('error')
+      return
     }
 
-    // Process the valid result
-    const result = lastResult
     if (!result) return
+
+    // Check if response has valid transcript data
+    if (!hasValidTranscriptData(result)) {
+      setError('No transcript data returned. The video may not have captions available.')
+      setErrorType('not_found')
+      setStatus('error')
+      return
+    }
 
     // Store all transcripts for instant language switching
     const hasTranscripts = result.transcripts && Object.keys(result.transcripts).length > 0
@@ -324,7 +293,6 @@ export function useTranscriptExtractor() {
     // Error state
     error,
     errorType,
-    retryInfo,
 
     // Handlers
     handleUrlChange,

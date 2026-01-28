@@ -301,8 +301,7 @@ export default function TranscriptResultView({
         </div>
 
         {/* Transcript Tab Content */}
-        {activeTab === 'transcript' && (
-          <>
+        <div className={activeTab !== 'transcript' ? 'hidden' : ''}>
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* Search */}
@@ -475,17 +474,18 @@ export default function TranscriptResultView({
             </div>
           </ScrollArea>
         </div>
-          </>
-        )}
+        </div>
 
         {/* Notes Tab Content */}
-        {activeTab === 'notes' && transcriptId && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <ScrollArea style={{ height: transcriptHeight }}>
-              <div className="p-6">
-                <NotesTab transcriptId={transcriptId} />
-              </div>
-            </ScrollArea>
+        {transcriptId && (
+          <div className={activeTab !== 'notes' ? 'hidden' : ''}>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <ScrollArea style={{ height: transcriptHeight }}>
+                <div className="p-6">
+                  <NotesTab transcriptId={transcriptId} />
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         )}
 
@@ -503,13 +503,15 @@ export default function TranscriptResultView({
         )}
 
         {/* Analysis Tab Content */}
-        {activeTab === 'analysis' && transcriptId && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <ScrollArea style={{ height: transcriptHeight }}>
-              <div className="p-6">
-                <AnalysisTab transcriptId={transcriptId} />
-              </div>
-            </ScrollArea>
+        {transcriptId && (
+          <div className={activeTab !== 'analysis' ? 'hidden' : ''}>
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              <ScrollArea style={{ height: transcriptHeight }}>
+                <div className="p-6">
+                  <AnalysisTab transcriptId={transcriptId} />
+                </div>
+              </ScrollArea>
+            </div>
           </div>
         )}
 

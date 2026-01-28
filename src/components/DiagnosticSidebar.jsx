@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { getConfig, checkConnectivity, checkHealth } from '../services/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { RefreshCw, CheckCircle, XCircle, Loader2, AlertTriangle } from 'lucide-react'
 
@@ -30,16 +29,7 @@ function StatusBadge({ status, label }) {
   )
 }
 
-function DiagnosticItem({ label, children }) {
-  return (
-    <div className="py-3">
-      <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1.5">{label}</div>
-      <div className="text-sm">{children}</div>
-    </div>
-  )
-}
-
-export default function DiagnosticSidebar({ apiError, retryInfo }) {
+export default function DiagnosticSidebar({ apiError }) {
   const [diagnostics, setDiagnostics] = useState({
     config: null,
     connectivity: { status: 'loading' },
@@ -92,118 +82,109 @@ export default function DiagnosticSidebar({ apiError, retryInfo }) {
   }, [apiError])
 
   return (
-    <div className="w-64 bg-slate-900 text-slate-100 flex flex-col h-screen sticky top-0">
-      <div className="flex items-center justify-between p-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-300">Diagnostics</h2>
-        <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50">
-          TEST
-        </Badge>
-      </div>
+    <div className="bg-slate-900 text-slate-100 shrink-0 border-t border-slate-700">
+      <div className="flex items-center gap-6 px-6 py-3 overflow-x-auto">
+        {/* Title */}
+        <div className="flex items-center gap-2 shrink-0">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-300">Diagnostics</h2>
+          <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/50 text-[10px] px-1.5 py-0">
+            TEST
+          </Badge>
+        </div>
 
-      <Separator className="bg-slate-700" />
+        <Separator orientation="vertical" className="bg-slate-700 h-8" />
 
-      <ScrollArea className="flex-1 px-4">
-        <div className="divide-y divide-slate-700">
-          <DiagnosticItem label="API Base URL">
-            <code className="text-xs break-all text-blue-400">
-              {diagnostics.config?.baseUrl || 'Loading...'}
-            </code>
-          </DiagnosticItem>
+        {/* API Base URL */}
+        <div className="shrink-0">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wide">URL</span>
+          <code className="text-xs text-blue-400 ml-2">
+            {diagnostics.config?.baseUrl || 'Loading...'}
+          </code>
+        </div>
 
-          <DiagnosticItem label="API Key">
-            <div className="flex items-center gap-2">
-              <code className="text-xs text-blue-400">{diagnostics.config?.apiKeyPreview || '...'}</code>
-              {diagnostics.config?.hasApiKey ? (
-                <StatusBadge status="ok" label="Set" />
-              ) : (
-                <StatusBadge status="error" label="Missing" />
-              )}
-            </div>
-          </DiagnosticItem>
+        <Separator orientation="vertical" className="bg-slate-700 h-8" />
 
-          <DiagnosticItem label="Server Connectivity">
-            <div className="flex items-center gap-2">
-              <StatusBadge
-                status={diagnostics.connectivity.status}
-                label={diagnostics.connectivity.status === 'loading' ? 'Checking...' :
-                       diagnostics.connectivity.connected ? 'Connected' : 'Failed'}
-              />
-              {diagnostics.connectivity.latency && (
-                <span className="text-xs text-slate-400">{diagnostics.connectivity.latency}ms</span>
-              )}
-            </div>
-            {diagnostics.connectivity.error && (
-              <p className="text-xs text-red-400 mt-1">{diagnostics.connectivity.error}</p>
-            )}
-          </DiagnosticItem>
-
-          <DiagnosticItem label="Health Check">
-            <div className="flex items-center gap-2">
-              <StatusBadge
-                status={diagnostics.health.status}
-                label={diagnostics.health.status === 'loading' ? 'Checking...' :
-                       diagnostics.health.healthy ? 'Healthy' : 'Unhealthy'}
-              />
-            </div>
-            {diagnostics.health.data && (
-              <pre className="text-xs text-slate-400 mt-1 overflow-auto max-h-20">
-                {JSON.stringify(diagnostics.health.data, null, 2)}
-              </pre>
-            )}
-            {diagnostics.health.error && (
-              <p className="text-xs text-red-400 mt-1">{diagnostics.health.error}</p>
-            )}
-          </DiagnosticItem>
-
-          {retryInfo && (
-            <DiagnosticItem label="Retry Status">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="gap-1">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Retrying...
-                </Badge>
-              </div>
-              <p className="text-xs text-yellow-400 mt-1">
-                Attempt {retryInfo.attempt}/{retryInfo.maxRetries} - waiting {retryInfo.delay / 1000}s
-              </p>
-              <p className="text-xs text-slate-400 mt-1">{retryInfo.error}</p>
-            </DiagnosticItem>
-          )}
-
-          {apiError && !retryInfo && (
-            <DiagnosticItem label="Last API Error">
-              <div className="flex items-center gap-2">
-                <Badge variant="destructive" className="gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  Failed
-                </Badge>
-              </div>
-              <p className="text-xs text-red-400 mt-1 break-words">{apiError}</p>
-            </DiagnosticItem>
+        {/* API Key */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wide">Key</span>
+          <code className="text-xs text-blue-400">{diagnostics.config?.apiKeyPreview || '...'}</code>
+          {diagnostics.config?.hasApiKey ? (
+            <StatusBadge status="ok" label="Set" />
+          ) : (
+            <StatusBadge status="error" label="Missing" />
           )}
         </div>
-      </ScrollArea>
 
-      <Separator className="bg-slate-700" />
+        <Separator orientation="vertical" className="bg-slate-700 h-8" />
 
-      <div className="p-4">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={runDiagnostics}
-          disabled={isRefreshing}
-          className="w-full"
-        >
-          {isRefreshing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
+        {/* Server Connectivity */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wide">Server</span>
+          <StatusBadge
+            status={diagnostics.connectivity.status}
+            label={diagnostics.connectivity.status === 'loading' ? 'Checking...' :
+                   diagnostics.connectivity.connected ? 'Connected' : 'Failed'}
+          />
+          {diagnostics.connectivity.latency && (
+            <span className="text-xs text-slate-400">{diagnostics.connectivity.latency}ms</span>
           )}
-          Refresh Diagnostics
-        </Button>
-        {lastCheck && (
-          <p className="text-xs text-slate-500 mt-2 text-center">Last check: {lastCheck}</p>
+          {diagnostics.connectivity.error && (
+            <span className="text-xs text-red-400">{diagnostics.connectivity.error}</span>
+          )}
+        </div>
+
+        <Separator orientation="vertical" className="bg-slate-700 h-8" />
+
+        {/* Health Check */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-[10px] text-slate-400 uppercase tracking-wide">Health</span>
+          <StatusBadge
+            status={diagnostics.health.status}
+            label={diagnostics.health.status === 'loading' ? 'Checking...' :
+                   diagnostics.health.healthy ? 'Healthy' : 'Unhealthy'}
+          />
+          {diagnostics.health.error && (
+            <span className="text-xs text-red-400">{diagnostics.health.error}</span>
+          )}
+        </div>
+
+        {/* API Error */}
+        {apiError && (
+          <>
+            <Separator orientation="vertical" className="bg-slate-700 h-8" />
+            <div className="flex items-center gap-2 shrink-0">
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                Error
+              </Badge>
+              <span className="text-xs text-red-400 max-w-xs truncate">{apiError}</span>
+            </div>
+          </>
         )}
+
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Refresh */}
+        <div className="flex items-center gap-2 shrink-0">
+          {lastCheck && (
+            <span className="text-[10px] text-slate-500">{lastCheck}</span>
+          )}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={runDiagnostics}
+            disabled={isRefreshing}
+            className="h-7 px-3 text-xs"
+          >
+            {isRefreshing ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3" />
+            )}
+            Refresh
+          </Button>
+        </div>
       </div>
     </div>
   )

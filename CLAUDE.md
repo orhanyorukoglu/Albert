@@ -90,7 +90,14 @@ Create `.env` file:
 ```
 VITE_API_KEY=4321
 VITE_API_BASE_URL=https://ytte-production.up.railway.app
+VITE_API_LOCAL_URL=http://localhost:8002
+VITE_API_ENVIRONMENT=local
 ```
+
+**IMPORTANT: Always read `.env` before making any API-related changes.**
+- If `VITE_API_ENVIRONMENT=local`, the app connects to `VITE_API_LOCAL_URL`. Use that URL as the backend.
+- If `VITE_API_ENVIRONMENT=production`, the app connects to `VITE_API_BASE_URL`. Use that URL as the backend.
+- Never fall back to a different environment unless the user explicitly asks.
 
 Note: `4321` is the development API key. Replace before production deployment.
 
