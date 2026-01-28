@@ -191,7 +191,7 @@ function HistoryItem({ transcript, isActive, onClick, onDelete }) {
   return (
     <div
       className={`relative flex items-start gap-3 py-3 px-3 cursor-pointer transition-colors ${
-        isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
+        isActive ? 'bg-blue-50' : 'hover:bg-gray-100'
       }`}
       onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
@@ -226,16 +226,16 @@ function HistoryItem({ transcript, isActive, onClick, onDelete }) {
           <p className="text-xs text-gray-400">
             {timeAgo}
           </p>
-          {/* Delete button - shows on hover */}
-          {isHovered && (
-            <button
-              onClick={onDelete}
-              className="p-1 rounded hover:bg-red-100 transition-colors"
-              title="Delete from history"
-            >
-              <Trash2 className="h-3.5 w-3.5 text-red-500" />
-            </button>
-          )}
+          {/* Delete button - always rendered, visibility controlled by opacity */}
+          <button
+            onClick={onDelete}
+            className={`p-1 rounded hover:bg-red-100 transition-all ${
+              isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
+            title="Delete from history"
+          >
+            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+          </button>
         </div>
       </div>
     </div>
