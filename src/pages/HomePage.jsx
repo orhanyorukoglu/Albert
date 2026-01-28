@@ -178,7 +178,7 @@ export default function HomePage() {
       )}
 
       {/* Main area with sidebar and content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 min-h-0">
         {TESTING_MODE && <DiagnosticSidebar apiError={error} retryInfo={retryInfo} />}
 
         {/* History Sidebar - only shows when authenticated */}
@@ -189,9 +189,9 @@ export default function HomePage() {
         />
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-y-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {/* Content area */}
-          <div className="flex-1 px-8 pb-8">
+          <div className="px-8 pb-8">
             {/* Default view - centered input + recent extractions */}
             <div className="max-w-5xl mx-auto">
               {/* Centered input area */}

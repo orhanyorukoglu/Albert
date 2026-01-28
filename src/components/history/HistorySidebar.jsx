@@ -102,7 +102,7 @@ export default function HistorySidebar({ onSelectTranscript, currentVideoId, onT
   }
 
   return (
-    <div className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
+    <div className="w-80 shrink-0 bg-white border-r border-gray-200 flex flex-col min-h-0">
       {/* Header */}
       <div className="px-4 py-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">History</h2>
@@ -135,7 +135,7 @@ export default function HistorySidebar({ onSelectTranscript, currentVideoId, onT
           </p>
         </div>
       ) : (
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           <div className="py-1">
             {transcripts.map((transcript) => (
               <HistoryItem
