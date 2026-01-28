@@ -5,6 +5,7 @@
 This document provides frontend integration for Albert (React + Vite) that matches the **Complete Backend Implementation Guide**.
 
 ### Key Changes from V2:
+
 - ✅ **X-API-Key header required** on ALL requests
 - ✅ **Email/password auth only** (Google OAuth deferred)
 - ✅ **JWT-based auto-save** (no `persist` parameter)
@@ -13,6 +14,7 @@ This document provides frontend integration for Albert (React + Vite) that match
 - ✅ **Backend-compatible API contracts**
 
 ### What This Adds:
+
 1. **Authentication UI** - Login, Register forms
 2. **Auth State Management** - JWT token handling, auto-refresh
 3. **Protected Routes** - Redirect unauthenticated users
@@ -95,8 +97,8 @@ VITE_API_KEY=4321
  * All requests include X-API-Key header.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const API_KEY = import.meta.env.VITE_API_KEY || '4321';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY || "4321";
 
 /**
  * Register a new user with email/password.
@@ -104,10 +106,10 @@ const API_KEY = import.meta.env.VITE_API_KEY || '4321';
  */
 export async function register({ email, password, displayName }) {
   const response = await fetch(`${API_BASE}/api/v1/auth/register`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'X-API-Key': API_KEY  // Required for all endpoints
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY, // Required for all endpoints
     },
     body: JSON.stringify({
       email,
@@ -118,7 +120,7 @@ export async function register({ email, password, displayName }) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Registration failed');
+    throw new Error(error.detail || "Registration failed");
   }
 
   return response.json(); // { access_token, refresh_token }
@@ -130,17 +132,17 @@ export async function register({ email, password, displayName }) {
  */
 export async function login({ email, password }) {
   const response = await fetch(`${API_BASE}/api/v1/auth/login`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'X-API-Key': API_KEY
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY,
     },
     body: JSON.stringify({ email, password }),
   });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Login failed');
+    throw new Error(error.detail || "Login failed");
   }
 
   return response.json(); // { access_token, refresh_token }
@@ -152,16 +154,16 @@ export async function login({ email, password }) {
  */
 export async function refreshToken(refreshToken) {
   const response = await fetch(`${API_BASE}/api/v1/auth/refresh`, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'X-API-Key': API_KEY
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": API_KEY,
     },
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 
   if (!response.ok) {
-    throw new Error('Token refresh failed');
+    throw new Error("Token refresh failed");
   }
 
   return response.json(); // { access_token, refresh_token }
@@ -174,13 +176,13 @@ export async function refreshToken(refreshToken) {
 export async function getCurrentUser(accessToken) {
   const response = await fetch(`${API_BASE}/api/v1/auth/me`, {
     headers: {
-      'X-API-Key': API_KEY,
-      'Authorization': `Bearer ${accessToken}`,
+      "X-API-Key": API_KEY,
+      Authorization: `Bearer ${accessToken}`,
     },
   });
 
   if (!response.ok) {
-    throw new Error('Failed to get user profile');
+    throw new Error("Failed to get user profile");
   }
 
   return response.json(); // { id, email, display_name, is_verified, created_at }
@@ -194,31 +196,37 @@ export async function getCurrentUser(accessToken) {
 ### File: `src/contexts/AuthContext.jsx`
 
 ```jsx
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { 
-  refreshToken as refreshTokenApi, 
-  getCurrentUser 
-} from '../services/authApi';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import {
+  refreshToken as refreshTokenApi,
+  getCurrentUser,
+} from "../services/authApi";
 
 const AuthContext = createContext(null);
 
 // Token storage keys
-const ACCESS_TOKEN_KEY = 'albert_access_token';
-const REFRESH_TOKEN_KEY = 'albert_refresh_token';
-const USER_KEY = 'albert_user';
+const ACCESS_TOKEN_KEY = "albert_access_token";
+const REFRESH_TOKEN_KEY = "albert_refresh_token";
+const USER_KEY = "albert_user";
 
 /**
  * Parse JWT to get expiration time.
  */
 function parseJwt(token) {
   try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const jsonPayload = decodeURIComponent(
       atob(base64)
-        .split('')
-        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-        .join('')
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join(""),
     );
     return JSON.parse(jsonPayload);
   } catch {
@@ -232,11 +240,11 @@ function parseJwt(token) {
 function isTokenExpiringSoon(token) {
   const payload = parseJwt(token);
   if (!payload || !payload.exp) return true;
-  
+
   const expiresAt = payload.exp * 1000; // Convert to ms
   const now = Date.now();
   const bufferMs = 60 * 1000; // 1 minute buffer
-  
+
   return now >= expiresAt - bufferMs;
 }
 
@@ -245,15 +253,15 @@ export function AuthProvider({ children }) {
     const stored = localStorage.getItem(USER_KEY);
     return stored ? JSON.parse(stored) : null;
   });
-  
-  const [accessToken, setAccessToken] = useState(() => 
-    localStorage.getItem(ACCESS_TOKEN_KEY)
+
+  const [accessToken, setAccessToken] = useState(() =>
+    localStorage.getItem(ACCESS_TOKEN_KEY),
   );
-  
+
   const [refreshTokenValue, setRefreshTokenValue] = useState(() =>
-    localStorage.getItem(REFRESH_TOKEN_KEY)
+    localStorage.getItem(REFRESH_TOKEN_KEY),
   );
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -263,20 +271,20 @@ export function AuthProvider({ children }) {
    */
   const saveAuth = useCallback(async (tokenResponse) => {
     const { access_token, refresh_token } = tokenResponse;
-    
+
     // Save tokens immediately
     setAccessToken(access_token);
     setRefreshTokenValue(refresh_token);
     localStorage.setItem(ACCESS_TOKEN_KEY, access_token);
     localStorage.setItem(REFRESH_TOKEN_KEY, refresh_token);
-    
+
     // Fetch user profile
     try {
       const userData = await getCurrentUser(access_token);
       setUser(userData);
       localStorage.setItem(USER_KEY, JSON.stringify(userData));
     } catch (error) {
-      console.error('Failed to fetch user profile:', error);
+      console.error("Failed to fetch user profile:", error);
       // Even if profile fetch fails, we have tokens
     }
   }, []);
@@ -288,7 +296,7 @@ export function AuthProvider({ children }) {
     setAccessToken(null);
     setRefreshTokenValue(null);
     setUser(null);
-    
+
     localStorage.removeItem(ACCESS_TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
@@ -299,20 +307,20 @@ export function AuthProvider({ children }) {
    */
   const refresh = useCallback(async () => {
     if (!refreshTokenValue || isRefreshing) return null;
-    
+
     setIsRefreshing(true);
     try {
       const response = await refreshTokenApi(refreshTokenValue);
-      
+
       // Update tokens
       setAccessToken(response.access_token);
       setRefreshTokenValue(response.refresh_token);
       localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
       localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
-      
+
       return response.access_token;
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error("Token refresh failed:", error);
       clearAuth();
       return null;
     } finally {
@@ -325,20 +333,23 @@ export function AuthProvider({ children }) {
    */
   const getAccessToken = useCallback(async () => {
     if (!accessToken) return null;
-    
+
     if (isTokenExpiringSoon(accessToken)) {
       return await refresh();
     }
-    
+
     return accessToken;
   }, [accessToken, refresh]);
 
   /**
    * Login with token response from register or login.
    */
-  const login = useCallback(async (tokenResponse) => {
-    await saveAuth(tokenResponse);
-  }, [saveAuth]);
+  const login = useCallback(
+    async (tokenResponse) => {
+      await saveAuth(tokenResponse);
+    },
+    [saveAuth],
+  );
 
   /**
    * Logout - clear local state only (no backend endpoint).
@@ -373,17 +384,13 @@ export function AuthProvider({ children }) {
     getAccessToken,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 }
@@ -401,16 +408,16 @@ export function useAuth() {
  * All requests include X-API-Key header.
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const API_KEY = import.meta.env.VITE_API_KEY || '4321';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY || "4321";
 
 /**
  * Base fetch with X-API-Key and optional auth token.
  */
 async function apiFetch(url, options = {}, getAccessToken = null) {
   const headers = {
-    'Content-Type': 'application/json',
-    'X-API-Key': API_KEY,  // Always required
+    "Content-Type": "application/json",
+    "X-API-Key": API_KEY, // Always required
     ...options.headers,
   };
 
@@ -418,7 +425,7 @@ async function apiFetch(url, options = {}, getAccessToken = null) {
   if (getAccessToken) {
     const token = await getAccessToken();
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers["Authorization"] = `Bearer ${token}`;
     }
   }
 
@@ -437,19 +444,19 @@ async function apiFetch(url, options = {}, getAccessToken = null) {
 
 /**
  * Extract transcript from YouTube URL.
- * 
+ *
  * Behavior:
  * - If getAccessToken provided (Albert user) → auto-saves to database
  * - If no getAccessToken (PRSMA user) → returns transcript only
  */
 export async function extractTranscript(videoUrl, getAccessToken = null) {
   return apiFetch(
-    '/api/v1/extract',
+    "/api/v1/extract",
     {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ video_url: videoUrl }),
     },
-    getAccessToken
+    getAccessToken,
   );
 }
 
@@ -457,11 +464,14 @@ export async function extractTranscript(videoUrl, getAccessToken = null) {
  * List user's saved transcripts.
  * Requires authentication.
  */
-export async function listTranscripts(getAccessToken, { limit = 20, offset = 0 } = {}) {
+export async function listTranscripts(
+  getAccessToken,
+  { limit = 20, offset = 0 } = {},
+) {
   return apiFetch(
     `/api/v1/transcripts?limit=${limit}&offset=${offset}`,
-    { method: 'GET' },
-    getAccessToken
+    { method: "GET" },
+    getAccessToken,
   );
 }
 
@@ -472,8 +482,8 @@ export async function listTranscripts(getAccessToken, { limit = 20, offset = 0 }
 export async function getTranscript(transcriptId, getAccessToken) {
   return apiFetch(
     `/api/v1/transcripts/${transcriptId}`,
-    { method: 'GET' },
-    getAccessToken
+    { method: "GET" },
+    getAccessToken,
   );
 }
 
@@ -484,8 +494,8 @@ export async function getTranscript(transcriptId, getAccessToken) {
 export async function deleteTranscript(transcriptId, getAccessToken) {
   return apiFetch(
     `/api/v1/transcripts/${transcriptId}`,
-    { method: 'DELETE' },
-    getAccessToken
+    { method: "DELETE" },
+    getAccessToken,
   );
 }
 
@@ -495,12 +505,12 @@ export async function deleteTranscript(transcriptId, getAccessToken) {
  */
 export async function analyzeTranscript(transcriptId, getAccessToken) {
   return apiFetch(
-    '/api/v1/analysis/analyze',
+    "/api/v1/analysis/analyze",
     {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify({ transcript_id: transcriptId }),
     },
-    getAccessToken
+    getAccessToken,
   );
 }
 
@@ -510,15 +520,15 @@ export async function analyzeTranscript(transcriptId, getAccessToken) {
  */
 export async function answerQuestion(analysisId, question, getAccessToken) {
   return apiFetch(
-    '/api/v1/analysis/answer',
+    "/api/v1/analysis/answer",
     {
-      method: 'POST',
-      body: JSON.stringify({ 
+      method: "POST",
+      body: JSON.stringify({
         analysis_id: analysisId,
-        question: question 
+        question: question,
       }),
     },
-    getAccessToken
+    getAccessToken,
   );
 }
 
@@ -526,11 +536,14 @@ export async function answerQuestion(analysisId, question, getAccessToken) {
  * List user's analyses.
  * Requires authentication.
  */
-export async function listAnalyses(getAccessToken, { limit = 20, offset = 0 } = {}) {
+export async function listAnalyses(
+  getAccessToken,
+  { limit = 20, offset = 0 } = {},
+) {
   return apiFetch(
     `/api/v1/analysis/?limit=${limit}&offset=${offset}`,
-    { method: 'GET' },
-    getAccessToken
+    { method: "GET" },
+    getAccessToken,
   );
 }
 
@@ -541,8 +554,8 @@ export async function listAnalyses(getAccessToken, { limit = 20, offset = 0 } = 
 export async function getAnalysis(analysisId, getAccessToken) {
   return apiFetch(
     `/api/v1/analysis/${analysisId}`,
-    { method: 'GET' },
-    getAccessToken
+    { method: "GET" },
+    getAccessToken,
   );
 }
 
@@ -553,8 +566,8 @@ export async function getAnalysis(analysisId, getAccessToken) {
 export async function deleteAnalysis(analysisId, getAccessToken) {
   return apiFetch(
     `/api/v1/analysis/${analysisId}`,
-    { method: 'DELETE' },
-    getAccessToken
+    { method: "DELETE" },
+    getAccessToken,
   );
 }
 ```
@@ -575,25 +588,17 @@ export function AuthLayout({ children, title, subtitle }) {
       <div className="max-w-md w-full space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <img 
-            src="/albert-logo.svg" 
-            alt="Albert" 
+          <img
+            src="/albert-logo.svg"
+            alt="Albert"
             className="mx-auto h-12 w-auto"
           />
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            {title}
-          </h2>
-          {subtitle && (
-            <p className="mt-2 text-sm text-gray-600">
-              {subtitle}
-            </p>
-          )}
+          <h2 className="mt-6 text-3xl font-bold text-gray-900">{title}</h2>
+          {subtitle && <p className="mt-2 text-sm text-gray-600">{subtitle}</p>}
         </div>
 
         {/* Content */}
-        <div className="bg-white py-8 px-6 shadow rounded-lg">
-          {children}
-        </div>
+        <div className="bg-white py-8 px-6 shadow rounded-lg">{children}</div>
       </div>
     </div>
   );
@@ -603,31 +608,31 @@ export function AuthLayout({ children, title, subtitle }) {
 ### File: `src/components/auth/LoginForm.jsx`
 
 ```jsx
-import { useState } from 'react';
+import { useState } from "react";
 
 /**
  * Email/password login form.
  */
 export function LoginForm({ onSubmit, isLoading }) {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
+      setError("Please fill in all fields");
       return;
     }
 
     try {
       await onSubmit(formData);
     } catch (err) {
-      setError(err.message || 'Login failed');
+      setError(err.message || "Login failed");
     }
   };
 
@@ -640,7 +645,10 @@ export function LoginForm({ onSubmit, isLoading }) {
       )}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700"
+        >
           Email address
         </label>
         <input
@@ -656,7 +664,10 @@ export function LoginForm({ onSubmit, isLoading }) {
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-gray-700"
+        >
           Password
         </label>
         <input
@@ -666,7 +677,9 @@ export function LoginForm({ onSubmit, isLoading }) {
           autoComplete="current-password"
           required
           value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, password: e.target.value })
+          }
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -676,7 +689,7 @@ export function LoginForm({ onSubmit, isLoading }) {
         disabled={isLoading}
         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? 'Signing in...' : 'Sign in'}
+        {isLoading ? "Signing in..." : "Sign in"}
       </button>
     </form>
   );
@@ -686,36 +699,36 @@ export function LoginForm({ onSubmit, isLoading }) {
 ### File: `src/components/auth/RegisterForm.jsx`
 
 ```jsx
-import { useState } from 'react';
+import { useState } from "react";
 
 /**
  * Email/password registration form.
  */
 export function RegisterForm({ onSubmit, isLoading }) {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    displayName: '',
+    email: "",
+    password: "",
+    confirmPassword: "",
+    displayName: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!formData.email || !formData.password || !formData.confirmPassword) {
-      setError('Please fill in all required fields');
+      setError("Please fill in all required fields");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Passwords do not match");
       return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError("Password must be at least 8 characters");
       return;
     }
 
@@ -726,7 +739,7 @@ export function RegisterForm({ onSubmit, isLoading }) {
         displayName: formData.displayName || null,
       });
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || "Registration failed");
     }
   };
 
@@ -739,7 +752,10 @@ export function RegisterForm({ onSubmit, isLoading }) {
       )}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700"
+        >
           Email address *
         </label>
         <input
@@ -755,7 +771,10 @@ export function RegisterForm({ onSubmit, isLoading }) {
       </div>
 
       <div>
-        <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="displayName"
+          className="block text-sm font-medium text-gray-700"
+        >
           Display name (optional)
         </label>
         <input
@@ -763,13 +782,18 @@ export function RegisterForm({ onSubmit, isLoading }) {
           name="displayName"
           type="text"
           value={formData.displayName}
-          onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, displayName: e.target.value })
+          }
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-gray-700"
+        >
           Password *
         </label>
         <input
@@ -779,14 +803,19 @@ export function RegisterForm({ onSubmit, isLoading }) {
           autoComplete="new-password"
           required
           value={formData.password}
-          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, password: e.target.value })
+          }
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
         <p className="mt-1 text-xs text-gray-500">At least 8 characters</p>
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+        <label
+          htmlFor="confirmPassword"
+          className="block text-sm font-medium text-gray-700"
+        >
           Confirm password *
         </label>
         <input
@@ -796,7 +825,9 @@ export function RegisterForm({ onSubmit, isLoading }) {
           autoComplete="new-password"
           required
           value={formData.confirmPassword}
-          onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, confirmPassword: e.target.value })
+          }
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
@@ -806,7 +837,7 @@ export function RegisterForm({ onSubmit, isLoading }) {
         disabled={isLoading}
         className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isLoading ? 'Creating account...' : 'Create account'}
+        {isLoading ? "Creating account..." : "Create account"}
       </button>
     </form>
   );
@@ -820,12 +851,12 @@ export function RegisterForm({ onSubmit, isLoading }) {
 ### File: `src/pages/LoginPage.jsx`
 
 ```jsx
-import { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { login as loginApi } from '../services/authApi';
-import { AuthLayout } from '../components/auth/AuthLayout';
-import { LoginForm } from '../components/auth/LoginForm';
+import { useState } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { login as loginApi } from "../services/authApi";
+import { AuthLayout } from "../components/auth/AuthLayout";
+import { LoginForm } from "../components/auth/LoginForm";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -834,7 +865,7 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Where to redirect after login
-  const from = location.state?.from?.pathname || '/';
+  const from = location.state?.from?.pathname || "/";
 
   const handleLogin = async (credentials) => {
     setIsLoading(true);
@@ -855,12 +886,12 @@ export function LoginPage() {
       subtitle="Welcome back! Please enter your details."
     >
       <LoginForm onSubmit={handleLogin} isLoading={isLoading} />
-      
+
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link 
-            to="/register" 
+          Don't have an account?{" "}
+          <Link
+            to="/register"
             className="font-medium text-blue-600 hover:text-blue-500"
           >
             Sign up
@@ -875,12 +906,12 @@ export function LoginPage() {
 ### File: `src/pages/RegisterPage.jsx`
 
 ```jsx
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { register as registerApi } from '../services/authApi';
-import { AuthLayout } from '../components/auth/AuthLayout';
-import { RegisterForm } from '../components/auth/RegisterForm';
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { register as registerApi } from "../services/authApi";
+import { AuthLayout } from "../components/auth/AuthLayout";
+import { RegisterForm } from "../components/auth/RegisterForm";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -892,7 +923,7 @@ export function RegisterPage() {
     try {
       const tokenResponse = await registerApi(data);
       await login(tokenResponse);
-      navigate('/', { replace: true });
+      navigate("/", { replace: true });
     } catch (error) {
       throw error; // RegisterForm will handle the error display
     } finally {
@@ -906,12 +937,12 @@ export function RegisterPage() {
       subtitle="Start analyzing YouTube transcripts with Claude."
     >
       <RegisterForm onSubmit={handleRegister} isLoading={isLoading} />
-      
+
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link 
-            to="/login" 
+          Already have an account?{" "}
+          <Link
+            to="/login"
             className="font-medium text-blue-600 hover:text-blue-500"
           >
             Sign in
@@ -930,8 +961,8 @@ export function RegisterPage() {
 ### File: `src/components/ProtectedRoute.jsx`
 
 ```jsx
-import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 /**
  * Protects routes - redirects to login if not authenticated.
@@ -967,8 +998,8 @@ export function ProtectedRoute({ children }) {
 ### File: `src/components/UserMenu.jsx`
 
 ```jsx
-import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from "../hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 /**
  * User dropdown menu in header.
@@ -981,7 +1012,7 @@ export function UserMenu() {
   if (!isAuthenticated) {
     return (
       <button
-        onClick={() => navigate('/login')}
+        onClick={() => navigate("/login")}
         className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
       >
         Sign in
@@ -991,7 +1022,7 @@ export function UserMenu() {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   return (
@@ -999,7 +1030,9 @@ export function UserMenu() {
       {/* User button */}
       <button className="flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-gray-100">
         <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-medium">
-          {user?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'}
+          {user?.display_name?.[0]?.toUpperCase() ||
+            user?.email?.[0]?.toUpperCase() ||
+            "U"}
         </div>
         <span className="text-sm font-medium text-gray-700">
           {user?.display_name || user?.email}
@@ -1010,18 +1043,18 @@ export function UserMenu() {
       <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block z-10">
         <div className="px-4 py-2 border-b">
           <p className="text-sm font-medium text-gray-900">
-            {user?.display_name || 'User'}
+            {user?.display_name || "User"}
           </p>
           <p className="text-xs text-gray-500">{user?.email}</p>
         </div>
-        
+
         <button
-          onClick={() => navigate('/history')}
+          onClick={() => navigate("/history")}
           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
         >
           My Transcripts
         </button>
-        
+
         <button
           onClick={handleLogout}
           className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
@@ -1041,8 +1074,8 @@ export function UserMenu() {
 ### File: `src/hooks/useAuth.js`
 
 ```javascript
-import { useContext } from 'react';
-import { AuthContext } from '../contexts/AuthContext';
+import { useContext } from "react";
+import { AuthContext } from "../contexts/AuthContext";
 
 /**
  * Hook to access auth context.
@@ -1050,7 +1083,7 @@ import { AuthContext } from '../contexts/AuthContext';
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 }
@@ -1063,16 +1096,16 @@ export function useAuth() {
 ### File: `src/App.jsx` (Update)
 
 ```jsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { UserMenu } from './components/UserMenu';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { UserMenu } from "./components/UserMenu";
 
 // Your existing components
-import TranscriptExtractor from './components/TranscriptExtractor';
-import TranscriptAnalysis from './components/TranscriptAnalysis';
+import TranscriptExtractor from "./components/TranscriptExtractor";
+import TranscriptAnalysis from "./components/TranscriptAnalysis";
 // ... other imports
 
 function AppLayout({ children }) {
@@ -1088,11 +1121,9 @@ function AppLayout({ children }) {
           <UserMenu />
         </div>
       </header>
-      
+
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8">
-        {children}
-      </main>
+      <main className="container mx-auto px-4 py-8">{children}</main>
     </div>
   );
 }
@@ -1115,7 +1146,7 @@ export default function App() {
           {/* Public routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          
+
           {/* Protected routes */}
           <Route
             path="/"
@@ -1127,7 +1158,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          
+
           <Route
             path="/history"
             element={
@@ -1139,7 +1170,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          
+
           {/* Add more protected routes as needed */}
         </Routes>
       </AuthProvider>
@@ -1155,21 +1186,21 @@ export default function App() {
 ### File: `src/components/TranscriptExtractor.jsx` (Update)
 
 ```jsx
-import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { extractTranscript } from '../services/api';
+import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { extractTranscript } from "../services/api";
 
 export function TranscriptExtractor({ onTranscriptExtracted }) {
   const { getAccessToken } = useAuth();
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleExtract = async (e) => {
     e.preventDefault();
-    
+
     if (!videoUrl) {
-      setError('Please enter a YouTube URL');
+      setError("Please enter a YouTube URL");
       return;
     }
 
@@ -1179,7 +1210,7 @@ export function TranscriptExtractor({ onTranscriptExtracted }) {
     try {
       // Extract with JWT (auto-saves if authenticated)
       const result = await extractTranscript(videoUrl, getAccessToken);
-      
+
       // Pass result to parent
       onTranscriptExtracted?.({
         transcript: result.transcript_text,
@@ -1189,9 +1220,8 @@ export function TranscriptExtractor({ onTranscriptExtracted }) {
         saved: result.saved, // True if JWT was present
         source: result.source,
       });
-      
     } catch (err) {
-      setError(err.message || 'Failed to extract transcript');
+      setError(err.message || "Failed to extract transcript");
     } finally {
       setIsLoading(false);
     }
@@ -1224,7 +1254,7 @@ export function TranscriptExtractor({ onTranscriptExtracted }) {
           disabled={isLoading}
           className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Extracting...' : 'Extract Transcript'}
+          {isLoading ? "Extracting..." : "Extract Transcript"}
         </button>
       </form>
     </div>
@@ -1239,25 +1269,35 @@ export function TranscriptExtractor({ onTranscriptExtracted }) {
 ### File: `src/components/TranscriptAnalysis.jsx` (Update)
 
 ```jsx
-import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { analyzeTranscript, answerQuestion } from '../services/api';
+import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
+import { analyzeTranscript, answerQuestion } from "../services/api";
 
-export function TranscriptAnalysis({ 
-  transcriptId,  // UUID from saved transcript (required)
+export function TranscriptAnalysis({
+  transcriptId, // UUID from saved transcript (required)
   videoTitle,
-  onError 
+  onError,
 }) {
   const { getAccessToken } = useAuth();
-  const [analysisState, setAnalysisState] = useState({ data: null, error: null });
-  const [answerState, setAnswerState] = useState({ question: null, answer: null, error: null });
+  const [analysisState, setAnalysisState] = useState({
+    data: null,
+    error: null,
+  });
+  const [answerState, setAnswerState] = useState({
+    question: null,
+    answer: null,
+    error: null,
+  });
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isAnswering, setIsAnswering] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
 
   const handleAnalyze = async () => {
     if (!transcriptId) {
-      setAnalysisState({ data: null, error: 'No transcript saved. Please extract a transcript first.' });
+      setAnalysisState({
+        data: null,
+        error: "No transcript saved. Please extract a transcript first.",
+      });
       return;
     }
 
@@ -1272,9 +1312,9 @@ export function TranscriptAnalysis({
         error: null,
       });
     } catch (err) {
-      const errorMessage = err.message || 'Analysis failed';
+      const errorMessage = err.message || "Analysis failed";
       setAnalysisState({ data: null, error: errorMessage });
-      onError?.(errorMessage, 'analysis');
+      onError?.(errorMessage, "analysis");
     } finally {
       setIsAnalyzing(false);
     }
@@ -1291,7 +1331,7 @@ export function TranscriptAnalysis({
       const result = await answerQuestion(
         analysisState.data.analysis_id,
         question,
-        getAccessToken
+        getAccessToken,
       );
 
       setAnswerState({
@@ -1303,7 +1343,7 @@ export function TranscriptAnalysis({
       setAnswerState({
         question,
         answer: null,
-        error: err.message || 'Failed to answer question',
+        error: err.message || "Failed to answer question",
       });
     } finally {
       setIsAnswering(false);
@@ -1319,7 +1359,7 @@ export function TranscriptAnalysis({
           disabled={isAnalyzing || !transcriptId}
           className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isAnalyzing ? 'Analyzing with Claude...' : 'Analyze with Claude'}
+          {isAnalyzing ? "Analyzing with Claude..." : "Analyze with Claude"}
         </button>
       )}
 
@@ -1339,7 +1379,10 @@ export function TranscriptAnalysis({
               <h3 className="font-semibold mb-2">Categories</h3>
               <div className="flex flex-wrap gap-2">
                 {analysisState.data.categories.map((category, i) => (
-                  <span key={i} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  <span
+                    key={i}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                  >
                     {category}
                   </span>
                 ))}
@@ -1348,19 +1391,24 @@ export function TranscriptAnalysis({
           )}
 
           {/* Key Data */}
-          {analysisState.data.extracted_data && Object.keys(analysisState.data.extracted_data).length > 0 && (
-            <div>
-              <h3 className="font-semibold mb-2">Key Information</h3>
-              <dl className="space-y-2">
-                {Object.entries(analysisState.data.extracted_data).map(([key, value]) => (
-                  <div key={key} className="flex">
-                    <dt className="font-medium text-gray-700 w-1/3">{key}:</dt>
-                    <dd className="text-gray-900 w-2/3">{value}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          )}
+          {analysisState.data.extracted_data &&
+            Object.keys(analysisState.data.extracted_data).length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-2">Key Information</h3>
+                <dl className="space-y-2">
+                  {Object.entries(analysisState.data.extracted_data).map(
+                    ([key, value]) => (
+                      <div key={key} className="flex">
+                        <dt className="font-medium text-gray-700 w-1/3">
+                          {key}:
+                        </dt>
+                        <dd className="text-gray-900 w-2/3">{value}</dd>
+                      </div>
+                    ),
+                  )}
+                </dl>
+              </div>
+            )}
 
           {/* Suggested Questions */}
           {analysisState.data.suggested_questions?.length > 0 && (
@@ -1410,9 +1458,9 @@ export function TranscriptAnalysis({
 ### File: Update your `HomePage` component
 
 ```jsx
-import { useState } from 'react';
-import { TranscriptExtractor } from '../components/TranscriptExtractor';
-import { TranscriptAnalysis } from '../components/TranscriptAnalysis';
+import { useState } from "react";
+import { TranscriptExtractor } from "../components/TranscriptExtractor";
+import { TranscriptAnalysis } from "../components/TranscriptAnalysis";
 
 function HomePage() {
   const [transcriptData, setTranscriptData] = useState(null);
@@ -1425,7 +1473,9 @@ function HomePage() {
     <div className="max-w-4xl mx-auto space-y-8">
       <div className="bg-white shadow rounded-lg p-6">
         <h1 className="text-2xl font-bold mb-4">Extract YouTube Transcript</h1>
-        <TranscriptExtractor onTranscriptExtracted={handleTranscriptExtracted} />
+        <TranscriptExtractor
+          onTranscriptExtracted={handleTranscriptExtracted}
+        />
       </div>
 
       {transcriptData && (
@@ -1439,10 +1489,16 @@ function HomePage() {
 
           {/* Transcript display */}
           <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-xl font-bold mb-2">{transcriptData.videoTitle}</h2>
-            <p className="text-sm text-gray-500 mb-4">Source: {transcriptData.source}</p>
+            <h2 className="text-xl font-bold mb-2">
+              {transcriptData.videoTitle}
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Source: {transcriptData.source}
+            </p>
             <div className="max-h-96 overflow-y-auto bg-gray-50 p-4 rounded">
-              <pre className="whitespace-pre-wrap text-sm">{transcriptData.transcript}</pre>
+              <pre className="whitespace-pre-wrap text-sm">
+                {transcriptData.transcript}
+              </pre>
             </div>
           </div>
 
@@ -1460,7 +1516,8 @@ function HomePage() {
           {/* Warning if not saved */}
           {!transcriptData.saved && (
             <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded">
-              ℹ️ Analysis requires a saved transcript. Please sign in to save and analyze transcripts.
+              ℹ️ Analysis requires a saved transcript. Please sign in to save
+              and analyze transcripts.
             </div>
           )}
         </>
@@ -1475,16 +1532,19 @@ function HomePage() {
 ## Implementation Checklist
 
 ### Phase 1: Setup
+
 - [ ] Add environment variables (`.env`)
 - [ ] Install dependencies (`react-router-dom`)
 - [ ] Create folder structure
 
 ### Phase 2: Auth Foundation
+
 - [ ] Create `src/services/authApi.js`
 - [ ] Create `src/contexts/AuthContext.jsx`
 - [ ] Create `src/hooks/useAuth.js`
 
 ### Phase 3: Auth UI
+
 - [ ] Create `src/components/auth/AuthLayout.jsx`
 - [ ] Create `src/components/auth/LoginForm.jsx`
 - [ ] Create `src/components/auth/RegisterForm.jsx`
@@ -1492,17 +1552,20 @@ function HomePage() {
 - [ ] Create `src/pages/RegisterPage.jsx`
 
 ### Phase 4: App Integration
+
 - [ ] Create `src/components/ProtectedRoute.jsx`
 - [ ] Create `src/components/UserMenu.jsx`
 - [ ] Update `src/App.jsx` with routes
 - [ ] Update `src/services/api.js` with X-API-Key
 
 ### Phase 5: Component Updates
+
 - [ ] Update `src/components/TranscriptExtractor.jsx`
 - [ ] Update `src/components/TranscriptAnalysis.jsx`
 - [ ] Update HomePage integration
 
 ### Phase 6: Testing
+
 - [ ] Test registration flow
 - [ ] Test login flow
 - [ ] Test token refresh (wait 15 min)
@@ -1517,6 +1580,7 @@ function HomePage() {
 ## Key Differences from V2
 
 ### ✅ Fixed Issues:
+
 1. **X-API-Key header** now included on ALL requests
 2. **Google OAuth removed** (not yet implemented in backend)
 3. **Logout endpoint removed** (just clears localStorage)
@@ -1525,6 +1589,7 @@ function HomePage() {
 6. **API key** configured via environment variable
 
 ### ✅ Matches Backend:
+
 - All endpoint paths correct
 - Request/response formats match
 - Authentication flow matches Phase 3
@@ -1554,6 +1619,7 @@ Until then, **email/password authentication only**.
 ## Summary
 
 This frontend integration:
+
 - ✅ Works with the backend implementation guide
 - ✅ Includes required X-API-Key header
 - ✅ Uses JWT-based auto-save
