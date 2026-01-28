@@ -102,7 +102,7 @@ export default function HistorySidebar({ onSelectTranscript, currentVideoId, onT
   }
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="px-4 py-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">History</h2>
