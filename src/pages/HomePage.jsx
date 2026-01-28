@@ -157,9 +157,9 @@ export default function HomePage() {
 
   // Show home view with sidebar
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50">
       {/* Header - spans full width */}
-      <header className="flex items-center justify-between px-8 py-4 bg-gray-50">
+      <header className="flex items-center justify-between px-8 py-4 bg-gray-50 shrink-0">
         <h1 className="text-2xl font-semibold" style={{ fontFamily: "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif" }}>
           <span className="text-blue-600">YouTube</span> Transcript Extractor
         </h1>
