@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check, Globe, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check, Globe, FileText, ChevronLeft, ChevronRight, StickyNote, FileText as TranscriptIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { formatDuration, formatViewCount, formatUploadDate, segmentsToSrt, segmentsToVtt, segmentsToParagraphs } from '../../utils/formatters'
+import NotesTab from '../notes/NotesTab'
 
 export default function TranscriptResultView({
   videoId,
@@ -24,11 +25,14 @@ export default function TranscriptResultView({
   onCopy,
   onDownload,
   onBack,
+  transcriptId,
+  isSaved,
 }) {
   const [showDescription, setShowDescription] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [copied, setCopied] = useState(false)
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
+  const [activeTab, setActiveTab] = useState('transcript')
   const leftColumnRef = useRef(null)
   const scrollAreaRef = useRef(null)
   const matchRefs = useRef([])
@@ -252,8 +256,39 @@ export default function TranscriptResultView({
         </div>
       </div>
 
-      {/* Right Column - Transcript */}
+      {/* Right Column - Transcript & Notes */}
       <div className="flex-1 min-w-0">
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">
+          <button
+            onClick={() => setActiveTab('transcript')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'transcript'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <TranscriptIcon className="h-4 w-4" />
+            Transcript
+          </button>
+          <button
+            onClick={() => setActiveTab('notes')}
+            disabled={!transcriptId}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'notes'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            } ${!transcriptId ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={!transcriptId ? 'Sign in to save transcripts and add notes' : ''}
+          >
+            <StickyNote className="h-4 w-4" />
+            Notes
+          </button>
+        </div>
+
+        {/* Transcript Tab Content */}
+        {activeTab === 'transcript' && (
+          <>
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-3 mb-4">
           {/* Search */}
@@ -426,6 +461,32 @@ export default function TranscriptResultView({
             </div>
           </ScrollArea>
         </div>
+          </>
+        )}
+
+        {/* Notes Tab Content */}
+        {activeTab === 'notes' && transcriptId && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <ScrollArea style={{ height: transcriptHeight }}>
+              <div className="p-6">
+                <NotesTab transcriptId={transcriptId} />
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* Notes unavailable message (when not authenticated) */}
+        {activeTab === 'notes' && !transcriptId && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="p-8 text-center">
+              <StickyNote className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Notes Unavailable</h3>
+              <p className="text-gray-600">
+                Sign in to save transcripts and add notes to them.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

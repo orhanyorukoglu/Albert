@@ -40,6 +40,10 @@ export default function HomePage() {
     thumbnailUrl,
     videoMetadata,
 
+    // Saved transcript info
+    transcriptId,
+    isSaved,
+
     // Error state
     error,
     errorType,
@@ -149,6 +153,8 @@ export default function HomePage() {
             onCopy={handleCopy}
             onDownload={handleDownload}
             onBack={handleBack}
+            transcriptId={transcriptId}
+            isSaved={isSaved}
           />
         </div>
       </div>

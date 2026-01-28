@@ -55,6 +55,10 @@ export function useTranscriptExtractor() {
   const [thumbnailUrl, setThumbnailUrl] = useState(null)
   const [videoMetadata, setVideoMetadata] = useState(null)
 
+  // Saved transcript state (when authenticated)
+  const [transcriptId, setTranscriptId] = useState(null)
+  const [isSaved, setIsSaved] = useState(false)
+
   // Error state
   const [error, setError] = useState(null)
   const [errorType, setErrorType] = useState(null)
@@ -72,6 +76,8 @@ export function useTranscriptExtractor() {
     setVideoId(null)
     setThumbnailUrl(null)
     setVideoMetadata(null)
+    setTranscriptId(null)
+    setIsSaved(false)
     setError(null)
     setErrorType(null)
     setRetryInfo(null)
@@ -132,6 +138,8 @@ export function useTranscriptExtractor() {
     setAllTranscripts(null)
     setThumbnailUrl(null)
     setVideoMetadata(null)
+    setTranscriptId(null)
+    setIsSaved(false)
 
     const maxEmptyRetries = 2
     let lastResult = null
@@ -264,6 +272,15 @@ export function useTranscriptExtractor() {
       })
     }
 
+    // Capture saved transcript info (when authenticated)
+    if (result.transcript_id) {
+      setTranscriptId(result.transcript_id)
+      setIsSaved(true)
+    }
+    if (result.saved !== undefined) {
+      setIsSaved(result.saved)
+    }
+
     setStatus('success')
   }
 
@@ -299,6 +316,10 @@ export function useTranscriptExtractor() {
     videoId,
     thumbnailUrl,
     videoMetadata,
+
+    // Saved transcript info (when authenticated)
+    transcriptId,
+    isSaved,
 
     // Error state
     error,

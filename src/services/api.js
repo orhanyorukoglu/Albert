@@ -411,3 +411,230 @@ export async function deleteTranscript(transcriptId, getAccessToken) {
 
   return true
 }
+
+// ============================================
+// Search API Functions
+// ============================================
+
+/**
+ * Search transcripts and notes by query.
+ * Requires authentication (JWT).
+ * Falls back to client-side filtering if API not available.
+ */
+export async function searchTranscripts(query, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'X-API-Key': API_KEY,
+  }
+
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('searchTranscripts: Error getting access token:', err)
+    }
+  }
+
+  const params = new URLSearchParams({ q: query, limit: '50' })
+
+  const response = await fetch(`${baseUrl}/api/v1/transcripts/search?${params}`, {
+    method: 'GET',
+    headers,
+  })
+
+  if (!response.ok) {
+    // If 404, the search endpoint doesn't exist yet - return null to trigger client-side fallback
+    if (response.status === 404) {
+      return null
+    }
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Search failed (${response.status})`)
+  }
+
+  return response.json()
+}
+
+// ============================================
+// Notes API Functions
+// ============================================
+
+/**
+ * Create a new note for a transcript.
+ * Requires authentication (JWT).
+ */
+export async function createNote(transcriptId, content, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-API-Key': API_KEY,
+  }
+
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('createNote: Error getting access token:', err)
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/notes`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      transcript_id: transcriptId,
+      content: content,
+    }),
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to create note (${response.status})`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Get all notes for a specific transcript.
+ * Requires authentication (JWT).
+ */
+export async function getNotesByTranscript(transcriptId, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'X-API-Key': API_KEY,
+  }
+
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('getNotesByTranscript: Error getting access token:', err)
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/notes/transcript/${transcriptId}`, {
+    method: 'GET',
+    headers,
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to fetch notes (${response.status})`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Update a note's content.
+ * Requires authentication (JWT).
+ */
+export async function updateNote(noteId, content, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-API-Key': API_KEY,
+  }
+
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('updateNote: Error getting access token:', err)
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/notes/${noteId}`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ content }),
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to update note (${response.status})`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Delete a note.
+ * Requires authentication (JWT).
+ */
+export async function deleteNote(noteId, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'X-API-Key': API_KEY,
+  }
+
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('deleteNote: Error getting access token:', err)
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/notes/${noteId}`, {
+    method: 'DELETE',
+    headers,
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to delete note (${response.status})`)
+  }
+
+  return true
+}
