@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check, Globe, FileText } from 'lucide-react'
+import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check, Globe, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -28,7 +28,10 @@ export default function TranscriptResultView({
   const [showDescription, setShowDescription] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [copied, setCopied] = useState(false)
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
   const leftColumnRef = useRef(null)
+  const scrollAreaRef = useRef(null)
+  const matchRefs = useRef([])
   const [transcriptHeight, setTranscriptHeight] = useState(500)
 
   // Measure left column height to match transcript card
@@ -73,6 +76,89 @@ export default function TranscriptResultView({
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `[${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}]`
+  }
+
+  // Count total matches in transcript
+  const countMatches = () => {
+    if (!searchQuery) return 0
+    const query = searchQuery.toLowerCase()
+    let count = 0
+    segments.forEach(seg => {
+      const text = seg.text.toLowerCase()
+      let idx = 0
+      while ((idx = text.indexOf(query, idx)) !== -1) {
+        count++
+        idx += query.length
+      }
+    })
+    return count
+  }
+
+  const totalMatches = countMatches()
+
+  // Reset current match index when search query changes
+  useEffect(() => {
+    setCurrentMatchIndex(0)
+    matchRefs.current = []
+  }, [searchQuery])
+
+  // Scroll to current match when index changes
+  useEffect(() => {
+    if (searchQuery && matchRefs.current[currentMatchIndex]) {
+      matchRefs.current[currentMatchIndex].scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      })
+    }
+  }, [currentMatchIndex, searchQuery])
+
+  const goToNextMatch = () => {
+    if (totalMatches > 0) {
+      setCurrentMatchIndex((prev) => (prev + 1) % totalMatches)
+    }
+  }
+
+  const goToPrevMatch = () => {
+    if (totalMatches > 0) {
+      setCurrentMatchIndex((prev) => (prev - 1 + totalMatches) % totalMatches)
+    }
+  }
+
+  // Mutable counter for tracking match index during render
+  const matchCounter = useRef(0)
+
+  // Reset match counter before each render of transcript content
+  const resetMatchCounter = () => {
+    matchCounter.current = 0
+  }
+
+  // Highlight text with refs for navigation
+  const highlightTextWithRefs = (text, query) => {
+    if (!query) return text
+
+    const parts = text.split(new RegExp(`(${escapeRegex(query)})`, 'gi'))
+
+    return parts.map((part, index) => {
+      if (part.toLowerCase() === query.toLowerCase()) {
+        const matchIdx = matchCounter.current
+        matchCounter.current++
+        const isCurrentMatch = matchIdx === currentMatchIndex
+        return (
+          <mark
+            key={index}
+            ref={(el) => { matchRefs.current[matchIdx] = el }}
+            className={`rounded px-0.5 ${
+              isCurrentMatch
+                ? 'bg-orange-400 text-white'
+                : 'bg-yellow-200 text-gray-900'
+            }`}
+          >
+            {part}
+          </mark>
+        )
+      }
+      return part
+    })
   }
 
   // Get YouTube embed URL
@@ -241,10 +327,50 @@ export default function TranscriptResultView({
           </Button>
         </div>
 
+        {/* Search Results Navigation */}
+        {searchQuery && totalMatches > 0 && (
+          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2 mb-4">
+            <span className="text-sm text-blue-800">
+              {totalMatches} {totalMatches === 1 ? 'match' : 'matches'} found
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-blue-700">
+                {currentMatchIndex + 1} of {totalMatches}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToPrevMatch}
+                className="h-8 w-8 p-0"
+                disabled={totalMatches <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={goToNextMatch}
+                className="h-8 w-8 p-0"
+                disabled={totalMatches <= 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {searchQuery && totalMatches === 0 && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 mb-4">
+            <span className="text-sm text-gray-600">No matches found</span>
+          </div>
+        )}
+
         {/* Transcript Content */}
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <ScrollArea style={{ height: transcriptHeight }}>
             <div className="p-6">
+              {/* Reset match counter before rendering */}
+              {resetMatchCounter()}
               {format === 'txt' ? (
                 // TXT format with timestamps
                 <div className="space-y-4">
@@ -260,7 +386,7 @@ export default function TranscriptResultView({
                       </a>
                       <p className="text-gray-800 leading-relaxed">
                         {searchQuery ? (
-                          highlightText(segment.text, searchQuery)
+                          highlightTextWithRefs(segment.text, searchQuery)
                         ) : (
                           segment.text
                         )}
@@ -274,7 +400,7 @@ export default function TranscriptResultView({
                   {segments.length > 0 ? (
                     segmentsToParagraphs(segments).map((paragraph, index) => (
                       <p key={index} className="text-gray-800 leading-relaxed mb-4 last:mb-0">
-                        {searchQuery ? highlightText(paragraph, searchQuery) : paragraph}
+                        {searchQuery ? highlightTextWithRefs(paragraph, searchQuery) : paragraph}
                       </p>
                     ))
                   ) : (
@@ -305,23 +431,7 @@ export default function TranscriptResultView({
   )
 }
 
-// Helper function to highlight search matches
-function highlightText(text, query) {
-  if (!query) return text
-
-  const parts = text.split(new RegExp(`(${escapeRegex(query)})`, 'gi'))
-
-  return parts.map((part, index) =>
-    part.toLowerCase() === query.toLowerCase() ? (
-      <mark key={index} className="bg-yellow-200 text-gray-900 rounded px-0.5">
-        {part}
-      </mark>
-    ) : (
-      part
-    )
-  )
-}
-
+// Helper function to escape regex special characters
 function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
