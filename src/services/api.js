@@ -638,3 +638,96 @@ export async function deleteNote(noteId, getAccessToken) {
 
   return true
 }
+
+// ============================================
+// Analysis API Functions
+// ============================================
+
+/**
+ * Trigger analysis for a transcript.
+ * Requires authentication (JWT).
+ */
+export async function analyzeTranscript(transcriptId, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'Content-Type': 'application/json',
+    'X-API-Key': API_KEY,
+  }
+
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('analyzeTranscript: Error getting access token:', err)
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/analysis/analyze`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ transcript_id: transcriptId }),
+  })
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to analyze transcript (${response.status})`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Get analysis for a specific transcript.
+ * Requires authentication (JWT).
+ * Returns null if no analysis exists (404).
+ */
+export async function getAnalysisByTranscript(transcriptId, getAccessToken) {
+  const baseUrl = getApiBaseUrl()
+
+  const headers = {
+    'X-API-Key': API_KEY,
+  }
+
+  if (getAccessToken) {
+    try {
+      const token = await getAccessToken()
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+    } catch (err) {
+      console.error('getAnalysisByTranscript: Error getting access token:', err)
+    }
+  }
+
+  const response = await fetch(`${baseUrl}/api/v1/analysis/by-transcript/${transcriptId}`, {
+    method: 'GET',
+    headers,
+  })
+
+  if (response.status === 404) {
+    return null
+  }
+
+  if (!response.ok) {
+    let errorDetail = ''
+    try {
+      const errorData = await response.json()
+      errorDetail = errorData.detail || errorData.message || ''
+    } catch {
+      // Ignore parse errors
+    }
+    throw new Error(errorDetail || `Failed to fetch analysis (${response.status})`)
+  }
+
+  return response.json()
+}

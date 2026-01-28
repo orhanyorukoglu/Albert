@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check, Globe, FileText, ChevronLeft, ChevronRight, StickyNote, FileText as TranscriptIcon } from 'lucide-react'
+import { ArrowLeft, Search, Copy, Download, ChevronDown, ChevronUp, Check, Globe, FileText, ChevronLeft, ChevronRight, StickyNote, FileText as TranscriptIcon, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select'
 import { formatDuration, formatViewCount, formatUploadDate, segmentsToSrt, segmentsToVtt, segmentsToParagraphs } from '../../utils/formatters'
 import NotesTab from '../notes/NotesTab'
+import AnalysisTab from './AnalysisTab'
 
 export default function TranscriptResultView({
   videoId,
@@ -284,6 +285,19 @@ export default function TranscriptResultView({
             <StickyNote className="h-4 w-4" />
             Notes
           </button>
+          <button
+            onClick={() => setActiveTab('analysis')}
+            disabled={!transcriptId}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'analysis'
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            } ${!transcriptId ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={!transcriptId ? 'Sign in to save transcripts and access analysis' : ''}
+          >
+            <Sparkles className="h-4 w-4" />
+            Analysis
+          </button>
         </div>
 
         {/* Transcript Tab Content */}
@@ -483,6 +497,30 @@ export default function TranscriptResultView({
               <h3 className="text-lg font-medium text-gray-900 mb-2">Notes Unavailable</h3>
               <p className="text-gray-600">
                 Sign in to save transcripts and add notes to them.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Analysis Tab Content */}
+        {activeTab === 'analysis' && transcriptId && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <ScrollArea style={{ height: transcriptHeight }}>
+              <div className="p-6">
+                <AnalysisTab transcriptId={transcriptId} />
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
+        {/* Analysis unavailable message (when not authenticated) */}
+        {activeTab === 'analysis' && !transcriptId && (
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div className="p-8 text-center">
+              <Sparkles className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Analysis Unavailable</h3>
+              <p className="text-gray-600">
+                Sign in to save transcripts and access AI-powered analysis.
               </p>
             </div>
           </div>
