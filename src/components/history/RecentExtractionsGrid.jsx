@@ -30,7 +30,7 @@ function RecentCard({ transcript, isActive, onClick }) {
     <div
       onClick={onClick}
       className={`cursor-pointer rounded-xl overflow-hidden transition-all hover:shadow-md ${
-        isActive ? 'ring-2 ring-primary shadow-md' : 'bg-white border border-gray-100'
+        isActive ? 'ring-2 ring-primary shadow-md' : 'bg-white border border-gray-200'
       }`}
     >
       {/* Thumbnail with duration overlay */}
