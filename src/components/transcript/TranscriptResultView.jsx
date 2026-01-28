@@ -283,9 +283,9 @@ export default function TranscriptResultView({
             </SelectContent>
           </Select>
 
-          {/* Language Selector */}
-          {availableLanguages.length > 1 && (
-            <Select value={selectedLanguage} onValueChange={(value) => onLanguageChange(value)}>
+          {/* Language Selector - always show if languages available */}
+          {availableLanguages.length > 0 && (
+            <Select value={selectedLanguage} onValueChange={(value) => onLanguageChange(value)} disabled={availableLanguages.length === 1}>
               <SelectTrigger className="w-[140px] h-10 bg-white">
                 <Globe className="h-4 w-4 mr-2 text-gray-500 shrink-0" />
                 <SelectValue className="truncate" />
