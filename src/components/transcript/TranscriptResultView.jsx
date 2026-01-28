@@ -28,6 +28,7 @@ export default function TranscriptResultView({
   onBack,
   transcriptId,
   isSaved,
+  isPlaceholderTranscript,
 }) {
   const [showDescription, setShowDescription] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -287,13 +288,13 @@ export default function TranscriptResultView({
           </button>
           <button
             onClick={() => setActiveTab('analysis')}
-            disabled={!transcriptId}
+            disabled={!transcriptId || isPlaceholderTranscript}
             className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               activeTab === 'analysis'
                 ? 'bg-white text-gray-900 shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
-            } ${!transcriptId ? 'opacity-50 cursor-not-allowed' : ''}`}
-            title={!transcriptId ? 'Sign in to save transcripts and access analysis' : ''}
+            } ${!transcriptId || isPlaceholderTranscript ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={!transcriptId ? 'Sign in to save transcripts and access analysis' : isPlaceholderTranscript ? 'Analysis unavailable for restricted videos' : ''}
           >
             <Sparkles className="h-4 w-4" />
             Analysis
@@ -503,7 +504,7 @@ export default function TranscriptResultView({
         )}
 
         {/* Analysis Tab Content */}
-        {transcriptId && (
+        {transcriptId && !isPlaceholderTranscript && (
           <div className={activeTab !== 'analysis' ? 'hidden' : ''}>
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <ScrollArea style={{ height: transcriptHeight }}>
@@ -515,14 +516,16 @@ export default function TranscriptResultView({
           </div>
         )}
 
-        {/* Analysis unavailable message (when not authenticated) */}
-        {activeTab === 'analysis' && !transcriptId && (
+        {/* Analysis unavailable message */}
+        {activeTab === 'analysis' && (!transcriptId || isPlaceholderTranscript) && (
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="p-8 text-center">
               <Sparkles className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Analysis Unavailable</h3>
               <p className="text-gray-600">
-                Sign in to save transcripts and access AI-powered analysis.
+                {isPlaceholderTranscript
+                  ? 'This video is restricted and does not have a transcript available for analysis.'
+                  : 'Sign in to save transcripts and access AI-powered analysis.'}
               </p>
             </div>
           </div>

@@ -32,6 +32,7 @@ export default function HomePage() {
 
     // Transcript data
     transcript,
+    isPlaceholderTranscript,
     availableLanguages,
     selectedLanguage,
     videoId,
@@ -154,6 +155,7 @@ export default function HomePage() {
             onBack={handleBack}
             transcriptId={transcriptId}
             isSaved={isSaved}
+            isPlaceholderTranscript={isPlaceholderTranscript}
           />
         </div>
       </div>

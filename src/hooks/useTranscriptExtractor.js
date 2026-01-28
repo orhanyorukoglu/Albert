@@ -3,6 +3,20 @@ import { extractTranscript } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { getFormattedContent } from '../utils/formatters'
 
+const PLACEHOLDER_TEXT = 'This video is restricted and does not allow transcript extraction'
+
+/**
+ * Check if the transcript consists entirely of placeholder text
+ * (backend returns metadata with this text when extraction fails)
+ */
+function isPlaceholder(transcript) {
+  if (!transcript) return false
+  const segments = transcript.segments || []
+  if (segments.length === 0) return false
+  const fullText = segments.map(s => s.text).join(' ').trim()
+  return fullText === PLACEHOLDER_TEXT
+}
+
 /**
  * Check if API response has valid transcript data
  */
@@ -278,6 +292,7 @@ export function useTranscriptExtractor() {
 
     // Transcript data
     transcript,
+    isPlaceholderTranscript: isPlaceholder(transcript),
     availableLanguages,
     selectedLanguage,
 
